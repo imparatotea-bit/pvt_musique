@@ -31,8 +31,7 @@ const study = lab.util.fromObject({
       },
       "parameters": {},
       "messageHandlers": {
-        "run": function anonymous(
-) {
+        "run": function anonymous() {
 console.log("=== DÉMARRAGE MUSIQUE ===");
 
 const button = document.getElementById('btn-start');
@@ -259,8 +258,7 @@ try {
       },
       "parameters": {},
       "messageHandlers": {
-        "before:prepare": function anonymous(
-) {
+        "before:prepare": function anonymous() {
 console.log("=== CHECK ARRETER MUSIQUE BLOC 1 ===");
 
 const datastore = this.options.datastore;
@@ -278,8 +276,7 @@ if (musiqueBloc1) {
   console.log("✓ EXÉCUTER Arreter_Musique_Bloc1 (groupe S→M, arrêt musique)");
 }
 },
-        "run": function anonymous(
-) {
+        "run": function anonymous() {
 console.log("=== ARRÊT MUSIQUE BLOC 1 ===");
 
 if (window.musiqueExperience) {
@@ -366,8 +363,7 @@ setTimeout(() => {
             },
             "parameters": {},
             "messageHandlers": {
-              "before:prepare": function anonymous(
-) {
+              "before:prepare": function anonymous() {
 // Ajouter les marqueurs de bloc et condition audio (BLOC 1)
 const datastore = this.options.datastore;
 const questData = datastore.data.find(d => d.sender === 'Questionnaire_initial');
@@ -379,8 +375,7 @@ if (questData) {
   this.data.participant_id = questData.participant_id;
 }
 },
-              "run": function anonymous(
-) {
+              "run": function anonymous() {
 // Attendre que le DOM soit prêt
 setTimeout(function() {
   const imageElement = document.getElementById('stimulus-image');
@@ -422,8 +417,7 @@ setTimeout(function() {
   }
 }.bind(this), 100);
 },
-              "after:end": function anonymous(
-) {
+              "after:end": function anonymous() {
 // Vérifier si la réponse est correcte
 const response = this.data.response;
 const correctResponse = this.parameters.correct_category;
@@ -668,8 +662,7 @@ this.data.rt = this.data.duration;
                 },
                 "parameters": {},
                 "messageHandlers": {
-                  "run": function anonymous(
-) {
+                  "run": function anonymous() {
 // Définir le timeout au moment de l'exécution
 const isi = Math.floor(Math.random() * 8000) + 2000;
 this.parameters.isi = isi;
@@ -681,8 +674,7 @@ setTimeout(() => {
   this.end();
 }, isi);
 },
-                  "after:end": function anonymous(
-) {
+                  "after:end": function anonymous() {
 // Vérifier si le participant a appuyé pendant l'ISI (anticipation)
 if (this.data.ended_on === 'response') {
   this.data.anticipation = true;
@@ -701,8 +693,7 @@ if (this.data.ended_on === 'response') {
                 },
                 "parameters": {},
                 "messageHandlers": {
-                  "after:end": function anonymous(
-) {
+                  "after:end": function anonymous() {
 // Arrêter le compteur
 this.state.running = false;
 
@@ -719,8 +710,7 @@ if (this.data.ended_on === 'timeout') {
   this.data.response_type = 'normal';
 }
 },
-                  "run": function anonymous(
-) {
+                  "run": function anonymous() {
 // Démarrer le compteur
 this.state.startTime = performance.now();
 this.state.running = true;
@@ -762,8 +752,7 @@ requestAnimationFrame(updateCounter);
       },
       "parameters": {},
       "messageHandlers": {
-        "before:prepare": function anonymous(
-) {
+        "before:prepare": function anonymous() {
 // Arrêter la musique uniquement si Bloc 2 doit être en silence
 const datastore = this.options.datastore;
 const questData = datastore.data.find(d => d.sender === 'Questionnaire_initial');
@@ -775,8 +764,7 @@ if (musiqueBloc2 || !window.musiqueExperience) {
   console.log("✓ Skip Arreter_Musique_Bloc2 (musique continue ou déjà arrêtée)");
 }
 },
-        "run": function anonymous(
-) {
+        "run": function anonymous() {
 // Arrêter la musique avant le Bloc 2
 if (window.musiqueExperience) {
   window.musiqueExperience.pause();
@@ -803,8 +791,7 @@ setTimeout(() => {
       },
       "parameters": {},
       "messageHandlers": {
-        "before:prepare": function anonymous(
-) {
+        "before:prepare": function anonymous() {
 const datastore = this.options.datastore;
 const questData = datastore.data.find(d => d.sender === 'Questionnaire_initial');
 const musiqueBloc2 = questData?.musique_bloc2;
@@ -815,8 +802,7 @@ if (!musiqueBloc2 || window.musiqueExperience) {
   console.log("✓ Skip Demarrer_Musique_Bloc2 (pas besoin ou déjà en cours)");
 }
 },
-        "run": function anonymous(
-) {
+        "run": function anonymous() {
 console.log("=== REDÉMARRAGE MUSIQUE BLOC 2 ===");
 
 const cheminMusique = 'static/musique.mp3';
@@ -889,8 +875,7 @@ setTimeout(() => {
             },
             "parameters": {},
             "messageHandlers": {
-              "before:prepare": function anonymous(
-) {
+              "before:prepare": function anonymous() {
 // Ajouter les marqueurs de bloc et condition audio (BLOC 2)
 const datastore = this.options.datastore;
 const questData = datastore.data.find(d => d.sender === 'Questionnaire_initial');
@@ -902,8 +887,7 @@ if (questData) {
   this.data.participant_id = questData.participant_id;
 }
 },
-              "run": function anonymous(
-) {
+              "run": function anonymous() {
 // Attendre que le DOM soit prêt
 setTimeout(function() {
   const imageElement = document.getElementById('stimulus-image');
@@ -945,8 +929,7 @@ setTimeout(function() {
   }
 }.bind(this), 100);
 },
-                                "before:prepare": function anonymous(
-) {
+                                "before:prepare": function anonymous() {
 // Ajouter les marqueurs de bloc et condition audio (BLOC 1 - PVT)
 const datastore = this.options.datastore;
 const questData = datastore.data.find(d => d.sender === 'Questionnaire_initial');
@@ -958,8 +941,7 @@ if (questData) {
   this.data.participant_id = questData.participant_id;
 }
 },
-                  "after:end": function anonymous(
-) {
+                  "after:end": function anonymous() {
 // Vérifier si la réponse est correcte
 const response = this.data.response;
 const correctResponse = this.parameters.correct_category;
@@ -1223,8 +1205,7 @@ this.data.rt = this.data.duration;
                 },
                 "parameters": {},
                 "messageHandlers": {
-                  "run": function anonymous(
-) {
+                  "run": function anonymous() {
 // Définir le timeout au moment de l'exécution
 const isi = Math.floor(Math.random() * 8000) + 2000;
 this.parameters.isi = isi;
@@ -1236,8 +1217,7 @@ setTimeout(() => {
   this.end();
 }, isi);
 },
-                  "after:end": function anonymous(
-) {
+                  "after:end": function anonymous() {
 // Vérifier si le participant a appuyé pendant l'ISI (anticipation)
 if (this.data.ended_on === 'response') {
   this.data.anticipation = true;
@@ -1256,8 +1236,7 @@ if (this.data.ended_on === 'response') {
                 },
                 "parameters": {},
                 "messageHandlers": {
-                  "after:end": function anonymous(
-) {
+                  "after:end": function anonymous() {
 // Arrêter le compteur
 this.state.running = false;
 
@@ -1274,8 +1253,7 @@ if (this.data.ended_on === 'timeout') {
   this.data.response_type = 'normal';
 }
 },
-                  "run": function anonymous(
-) {
+                  "run": function anonymous() {
 // Démarrer le compteur
 this.state.startTime = performance.now();
 this.state.running = true;
@@ -1317,8 +1295,7 @@ requestAnimationFrame(updateCounter);
       },
       "parameters": {},
       "messageHandlers": {
-                  "before:prepare": function anonymous(
-) {
+                  "before:prepare": function anonymous() {
 // Ajouter les marqueurs de bloc et condition audio (BLOC 2 - PVT)
 const datastore = this.options.datastore;
 const questData = datastore.data.find(d => d.sender === 'Questionnaire_initial');
@@ -1330,8 +1307,7 @@ if (questData) {
   this.data.participant_id = questData.participant_id;
 }
 },
-        "run": function anonymous(
-) {
+        "run": function anonymous() {
 // Arrêter la musique pour tout le monde à la fin
 if (window.musiqueExperience) {
   window.musiqueExperience.pause();
