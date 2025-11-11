@@ -115,8 +115,7 @@ button.onclick = function() {
       },
       "parameters": {},
       "messageHandlers": {
-        "after:end": async function anonymous(
-) {
+        "after:end": async function anonymous() {
 // ===== ASSIGNATION VIA BACKEND (ÉQUILIBRAGE AUTOMATIQUE) =====
 
 // 1. Créer un ID unique basé sur le timestamp
