@@ -726,19 +726,6 @@ requestAnimationFrame(updateCounter);
       },
       "parameters": {},
       "messageHandlers": {
-                  "before:prepare": function anonymous(
-) {
-// Ajouter les marqueurs de bloc et condition audio (BLOC 1 - PVT)
-const datastore = this.options.datastore;
-const questData = datastore.data.find(d => d.sender === \'Questionnaire_initial\');
-
-if (questData) {
-  this.data.bloc_number = 1;
-  this.data.audio_condition = questData.musique_bloc1 ? "musique" : "silence";
-  this.data.groupe_experimental = questData.groupe_experimental;
-  this.data.participant_id = questData.participant_id;
-}
-},
         "before:prepare": function anonymous(
 ) {
 // Arrêter la musique uniquement si Bloc 2 doit être en silence
@@ -870,7 +857,7 @@ setTimeout(() => {
 ) {
 // Ajouter les marqueurs de bloc et condition audio (BLOC 2)
 const datastore = this.options.datastore;
-const questData = datastore.data.find(d => d.sender === \'Questionnaire_initial\');
+const questData = datastore.data.find(d => d.sender === 'Questionnaire_initial');
 
 if (questData) {
   this.data.bloc_number = 2;
@@ -922,7 +909,20 @@ setTimeout(function() {
   }
 }.bind(this), 100);
 },
-              "after:end": function anonymous(
+                                "before:prepare": function anonymous(
+) {
+// Ajouter les marqueurs de bloc et condition audio (BLOC 1 - PVT)
+const datastore = this.options.datastore;
+const questData = datastore.data.find(d => d.sender === 'Questionnaire_initial');
+
+if (questData) {
+  this.data.bloc_number = 1;
+  this.data.audio_condition = questData.musique_bloc1 ? "musique" : "silence";
+  this.data.groupe_experimental = questData.groupe_experimental;
+  this.data.participant_id = questData.participant_id;
+}
+},
+                  "after:end": function anonymous(
 ) {
 // Vérifier si la réponse est correcte
 const response = this.data.response;
@@ -1285,7 +1285,7 @@ requestAnimationFrame(updateCounter);
 ) {
 // Ajouter les marqueurs de bloc et condition audio (BLOC 2 - PVT)
 const datastore = this.options.datastore;
-const questData = datastore.data.find(d => d.sender === \'Questionnaire_initial\');
+const questData = datastore.data.find(d => d.sender === 'Questionnaire_initial');
 
 if (questData) {
   this.data.bloc_number = 2;
