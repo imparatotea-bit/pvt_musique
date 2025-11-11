@@ -330,6 +330,19 @@ setTimeout(() => {
             },
             "parameters": {},
             "messageHandlers": {
+              "before:prepare": function anonymous(
+) {
+// Ajouter les marqueurs de bloc et condition audio (BLOC 1)
+const datastore = this.options.datastore;
+const questData = datastore.data.find(d => d.sender === 'Questionnaire_initial');
+
+if (questData) {
+  this.data.bloc_number = 1;
+  this.data.audio_condition = questData.musique_bloc1 ? "musique" : "silence";
+  this.data.groupe_experimental = questData.groupe_experimental;
+  this.data.participant_id = questData.participant_id;
+}
+},
               "run": function anonymous(
 ) {
 // Attendre que le DOM soit prêt
@@ -713,25 +726,40 @@ requestAnimationFrame(updateCounter);
       },
       "parameters": {},
       "messageHandlers": {
+                  "before:prepare": function anonymous(
+) {
+// Ajouter les marqueurs de bloc et condition audio (BLOC 1 - PVT)
+const datastore = this.options.datastore;
+const questData = datastore.data.find(d => d.sender === \'Questionnaire_initial\');
+
+if (questData) {
+  this.data.bloc_number = 1;
+  this.data.audio_condition = questData.musique_bloc1 ? "musique" : "silence";
+  this.data.groupe_experimental = questData.groupe_experimental;
+  this.data.participant_id = questData.participant_id;
+}
+},
         "before:prepare": function anonymous(
 ) {
-// Skip ce composant si pas de musique pour le bloc 1
+// Arrêter la musique uniquement si Bloc 2 doit être en silence
 const datastore = this.options.datastore;
 const questData = datastore.data.find(d => d.sender === 'Questionnaire_initial');
-const musiqueBloc1 = questData?.musique_bloc1;
+const musiqueBloc2 = questData?.musique_bloc2;
 
-if (!musiqueBloc1) {
+// Skip si le bloc 2 doit avoir de la musique OU si pas de musique active
+if (musiqueBloc2 || !window.musiqueExperience) {
   this.skip = true;
-  console.log("✓ Skip Arreter_Musique_Bloc1");
+  console.log("✓ Skip Arreter_Musique_Bloc2 (musique continue ou déjà arrêtée)");
 }
 },
         "run": function anonymous(
 ) {
-// Arrêter la musique du bloc 1
-if (window.musiqueBloc1) {
-  window.musiqueBloc1.pause();
-  window.musiqueBloc1.currentTime = 0;
-  console.log("✓ Musique arrêtée - Bloc 1");
+// Arrêter la musique avant le Bloc 2
+if (window.musiqueExperience) {
+  window.musiqueExperience.pause();
+  window.musiqueExperience.currentTime = 0;
+  window.musiqueExperience = null;
+  console.log("✓ Musique arrêtée avant Bloc 2 (transition vers silence)");
 }
 
 // Passer automatiquement à l'écran suivant
@@ -838,6 +866,19 @@ setTimeout(() => {
             },
             "parameters": {},
             "messageHandlers": {
+              "before:prepare": function anonymous(
+) {
+// Ajouter les marqueurs de bloc et condition audio (BLOC 2)
+const datastore = this.options.datastore;
+const questData = datastore.data.find(d => d.sender === \'Questionnaire_initial\');
+
+if (questData) {
+  this.data.bloc_number = 2;
+  this.data.audio_condition = questData.musique_bloc2 ? "musique" : "silence";
+  this.data.groupe_experimental = questData.groupe_experimental;
+  this.data.participant_id = questData.participant_id;
+}
+},
               "run": function anonymous(
 ) {
 // Attendre que le DOM soit prêt
@@ -1240,6 +1281,19 @@ requestAnimationFrame(updateCounter);
       },
       "parameters": {},
       "messageHandlers": {
+                  "before:prepare": function anonymous(
+) {
+// Ajouter les marqueurs de bloc et condition audio (BLOC 2 - PVT)
+const datastore = this.options.datastore;
+const questData = datastore.data.find(d => d.sender === \'Questionnaire_initial\');
+
+if (questData) {
+  this.data.bloc_number = 2;
+  this.data.audio_condition = questData.musique_bloc2 ? "musique" : "silence";
+  this.data.groupe_experimental = questData.groupe_experimental;
+  this.data.participant_id = questData.participant_id;
+}
+},
         "run": function anonymous(
 ) {
 // Arrêter la musique pour tout le monde à la fin
