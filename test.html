@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Test Script.js</title>
+</head>
+<body>
+  <h1>Test de chargement de script.js</h1>
+  <div id="status">Chargement...</div>
+
+  <script>
+    // Test de chargement
+    console.log('test.html chargé');
+
+    // Charger script.js et capturer les erreurs
+    window.addEventListener('error', function(e) {
+      console.error('ERREUR DÉTECTÉE:', e);
+      document.getElementById('status').innerHTML =
+        '<strong style="color:red">ERREUR:</strong><br>' +
+        'Message: ' + e.message + '<br>' +
+        'Fichier: ' + e.filename + '<br>' +
+        'Ligne: ' + e.lineno + '<br>' +
+        'Colonne: ' + e.colno;
+    }, true);
+
+    // Charger script.js
+    const script = document.createElement('script');
+    script.src = 'script.js';
+    script.onload = function() {
+      document.getElementById('status').innerHTML =
+        '<strong style="color:green">✅ script.js chargé sans erreur!</strong>';
+    };
+    script.onerror = function(e) {
+      document.getElementById('status').innerHTML =
+        '<strong style="color:red">❌ Erreur de chargement de script.js</strong>';
+    };
+    document.head.appendChild(script);
+  </script>
+</body>
+</html>
