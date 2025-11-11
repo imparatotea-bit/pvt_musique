@@ -101,8 +101,7 @@ button.onclick = function() {
 }
       },
       "title": "Demarrer_Musique_Questionnaire",
-      "content": "\u003Cmain class=\"content-vertical-center content-horizontal-center\"\u003E\r\n  \u003Cdiv style=\"text-align: center; max-width: 600px;\"\u003E\r\n    \u003Ch2 style=\"margin-bottom: 30px;\"\u003E🎵 Bienvenue !\u003C\u002Fh2\u003E\r\n    \r\n    \u003Cp style=\"font-size: 20px; margin-bottom: 40px;\"\u003E\r\n      Cette expérience se déroule en musique.\u003Cbr\u003E\u003Cbr\u003E\r\n      \u003Cstrong\u003EVeuillez mettre un casque ou des écouteurs\u003C\u002Fstrong\u003E et ajuster le volume à un niveau confortable.\u003Cbr\u003E\u003Cbr\u003E\r\n      Cliquez sur le bouton ci-dessous pour démarrer.\r\n    \u003C\u002Fp\u003E\r\n    \r\n    \u003Cbutton id=\"btn-start\" \r\n            style=\"background: #0066cc; color: white; border: none; padding: 20px 50px; font-size: 22px; border-radius: 12px; cursor: pointer; font-weight: bold;\"\u003E\r\n      🎵 DÉMARRER L'EXPÉRIENCE\r\n    \u003C\u002Fbutton\u003E\r\n  \u003C\u002Fdiv\u003E\r\n\u003C\u002Fmain\u003E",
-      "timeout": "1000"
+      "content": "\u003Cmain class=\"content-vertical-center content-horizontal-center\"\u003E\r\n  \u003Cdiv style=\"text-align: center; max-width: 600px;\"\u003E\r\n    \u003Ch2 style=\"margin-bottom: 30px;\"\u003E🎵 Bienvenue !\u003C\u002Fh2\u003E\r\n    \r\n    \u003Cp style=\"font-size: 20px; margin-bottom: 40px;\"\u003E\r\n      Cette expérience se déroule en musique.\u003Cbr\u003E\u003Cbr\u003E\r\n      \u003Cstrong\u003EVeuillez mettre un casque ou des écouteurs\u003C\u002Fstrong\u003E et ajuster le volume à un niveau confortable.\u003Cbr\u003E\u003Cbr\u003E\r\n      Cliquez sur le bouton ci-dessous pour démarrer.\r\n    \u003C\u002Fp\u003E\r\n    \r\n    \u003Cbutton id=\"btn-start\" \r\n            style=\"background: #0066cc; color: white; border: none; padding: 20px 50px; font-size: 22px; border-radius: 12px; cursor: pointer; font-weight: bold;\"\u003E\r\n      🎵 DÉMARRER L'EXPÉRIENCE\r\n    \u003C\u002Fbutton\u003E\r\n  \u003C\u002Fdiv\u003E\r\n\u003C\u002Fmain\u003E"
     },
     {
       "type": "lab.html.Form",
@@ -114,6 +113,43 @@ button.onclick = function() {
       },
       "parameters": {},
       "messageHandlers": {
+        "run": function anonymous() {
+// Initialiser les sliders dynamiques
+const habitueSlider = document.getElementById('habitude_slider');
+const habitueOutput = document.getElementById('habitude_output');
+
+if (habitueSlider && habitueOutput) {
+  // Mettre à jour immédiatement
+  habitueOutput.textContent = habitueSlider.value;
+
+  // Event listener pour les changements
+  habitueSlider.addEventListener('input', function(e) {
+    habitueOutput.textContent = e.target.value;
+  });
+
+  console.log('✅ Slider habitude musicale initialisé:', habitueSlider.value);
+}
+
+// Fatigue
+const fatigueSlider = document.getElementById('fatigue_slider');
+const fatigueOutput = document.getElementById('fatigue_output');
+if (fatigueSlider && fatigueOutput) {
+  fatigueOutput.value = fatigueSlider.value;
+  fatigueSlider.addEventListener('input', function(e) {
+    fatigueOutput.value = e.target.value;
+  });
+}
+
+// Stress
+const stressSlider = document.getElementById('stress_slider');
+const stressOutput = document.getElementById('stress_output');
+if (stressSlider && stressOutput) {
+  stressOutput.value = stressSlider.value;
+  stressSlider.addEventListener('input', function(e) {
+    stressOutput.value = e.target.value;
+  });
+}
+},
         "after:end": async function anonymous() {
 // ===== ASSIGNATION VIA BACKEND (ÉQUILIBRAGE AUTOMATIQUE) =====
 
@@ -716,7 +752,7 @@ if (this.data.ended_on === 'timeout') {
 this.state.startTime = performance.now();
 this.state.running = true;
 this.state.spaceKeyDown = false; // Tracker si la touche est enfoncée
-this.state.continuousPress = false; // Flag pour appui continu
+this.state.hasHadFirstPress = false; // A-t-on eu au moins un appui valide
 this.state.lastResponseTime = 0; // Dernier temps de réponse
 
 const self = this;
@@ -737,26 +773,28 @@ const handleKeyUp = function(e) {
 // Intercepter AVANT lab.js pour bloquer les appuis invalides
 const handleKeyPress = function(e) {
   if (e.code === 'Space' || e.key === ' ' || e.keyCode === 32) {
-    // Vérifier si la touche est maintenue enfoncée
-    if (self.state.spaceKeyDown && self.state.lastResponseTime > 0) {
-      e.preventDefault();
-      e.stopImmediatePropagation();
-      console.warn('⚠️ Appui continu détecté - BLOQUÉ');
-      return false;
-    }
-
-    // Vérifier le délai minimum entre deux appuis (100ms)
     const now = performance.now();
-    if (self.state.lastResponseTime > 0 && (now - self.state.lastResponseTime) < 100) {
+
+    // Vérifier si la touche est déjà enfoncée (appui continu)
+    if (self.state.spaceKeyDown && self.state.hasHadFirstPress) {
       e.preventDefault();
       e.stopImmediatePropagation();
-      console.warn('⚠️ Appui trop rapide (<100ms) - BLOQUÉ');
+      console.warn('⚠️ Appui continu détecté (touche maintenue) - BLOQUÉ');
       return false;
     }
 
-    // Appui valide : enregistrer le timestamp
+    // Vérifier le délai minimum entre deux appuis (150ms)
+    if (self.state.lastResponseTime > 0 && (now - self.state.lastResponseTime) < 150) {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      console.warn('⚠️ Appui trop rapide (<150ms) - BLOQUÉ');
+      return false;
+    }
+
+    // Appui valide : enregistrer le timestamp et marquer qu'on a eu un appui
     self.state.lastResponseTime = now;
-    console.log('✓ Appui valide détecté');
+    self.state.hasHadFirstPress = true;
+    console.log('✓ Appui valide détecté (TR:', Math.round(now - self.state.startTime), 'ms)');
   }
 };
 
@@ -1314,7 +1352,7 @@ if (this.data.ended_on === 'timeout') {
 this.state.startTime = performance.now();
 this.state.running = true;
 this.state.spaceKeyDown = false; // Tracker si la touche est enfoncée
-this.state.continuousPress = false; // Flag pour appui continu
+this.state.hasHadFirstPress = false; // A-t-on eu au moins un appui valide
 this.state.lastResponseTime = 0; // Dernier temps de réponse
 
 const self = this;
@@ -1335,26 +1373,28 @@ const handleKeyUp = function(e) {
 // Intercepter AVANT lab.js pour bloquer les appuis invalides
 const handleKeyPress = function(e) {
   if (e.code === 'Space' || e.key === ' ' || e.keyCode === 32) {
-    // Vérifier si la touche est maintenue enfoncée
-    if (self.state.spaceKeyDown && self.state.lastResponseTime > 0) {
-      e.preventDefault();
-      e.stopImmediatePropagation();
-      console.warn('⚠️ Appui continu détecté - BLOQUÉ');
-      return false;
-    }
-
-    // Vérifier le délai minimum entre deux appuis (100ms)
     const now = performance.now();
-    if (self.state.lastResponseTime > 0 && (now - self.state.lastResponseTime) < 100) {
+
+    // Vérifier si la touche est déjà enfoncée (appui continu)
+    if (self.state.spaceKeyDown && self.state.hasHadFirstPress) {
       e.preventDefault();
       e.stopImmediatePropagation();
-      console.warn('⚠️ Appui trop rapide (<100ms) - BLOQUÉ');
+      console.warn('⚠️ Appui continu détecté (touche maintenue) - BLOQUÉ');
       return false;
     }
 
-    // Appui valide : enregistrer le timestamp
+    // Vérifier le délai minimum entre deux appuis (150ms)
+    if (self.state.lastResponseTime > 0 && (now - self.state.lastResponseTime) < 150) {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      console.warn('⚠️ Appui trop rapide (<150ms) - BLOQUÉ');
+      return false;
+    }
+
+    // Appui valide : enregistrer le timestamp et marquer qu'on a eu un appui
     self.state.lastResponseTime = now;
-    console.log('✓ Appui valide détecté');
+    self.state.hasHadFirstPress = true;
+    console.log('✓ Appui valide détecté (TR:', Math.round(now - self.state.startTime), 'ms)');
   }
 };
 
