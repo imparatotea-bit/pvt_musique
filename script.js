@@ -700,23 +700,15 @@ this.state.running = false;
 // Enregistrer les données
 this.data.rt = this.data.duration;
 
-// Vérifier si c'est un appui continu
-if (this.state.continuousPress) {
-  this.data.response_type = 'continuous_press';
-  this.data.valid_response = false;
-  console.log('⚠️ Réponse invalide : appui continu ou trop rapide');
-} else if (this.data.ended_on === 'timeout') {
+// Classifier le type de réponse
+if (this.data.ended_on === 'timeout') {
   this.data.response_type = 'no_response';
-  this.data.valid_response = false;
 } else if (this.data.rt < 100) {
   this.data.response_type = 'anticipation';
-  this.data.valid_response = false;
 } else if (this.data.rt > 500) {
   this.data.response_type = 'lapse';
-  this.data.valid_response = true; // Les lapses sont valides mais lents
 } else {
   this.data.response_type = 'normal';
-  this.data.valid_response = true;
 }
 },
                   "run": function anonymous() {
@@ -732,25 +724,7 @@ const self = this;
 // Détecter les appuis continus sur la barre espace
 const handleKeyDown = function(e) {
   if (e.code === 'Space' || e.key === ' ') {
-    if (self.state.spaceKeyDown) {
-      // La touche est déjà enfoncée = appui continu détecté
-      e.preventDefault();
-      self.state.continuousPress = true;
-      console.warn('⚠️ Appui continu détecté - réponse ignorée');
-      return;
-    }
-
-    // Vérifier le délai minimum entre deux appuis (100ms)
-    const now = performance.now();
-    if (self.state.lastResponseTime > 0 && (now - self.state.lastResponseTime) < 100) {
-      e.preventDefault();
-      self.state.continuousPress = true;
-      console.warn('⚠️ Appui trop rapide détecté - réponse ignorée');
-      return;
-    }
-
     self.state.spaceKeyDown = true;
-    self.state.lastResponseTime = now;
   }
 };
 
@@ -760,14 +734,42 @@ const handleKeyUp = function(e) {
   }
 };
 
-// Ajouter les listeners
+// Intercepter AVANT lab.js pour bloquer les appuis invalides
+const handleKeyPress = function(e) {
+  if (e.code === 'Space' || e.key === ' ' || e.keyCode === 32) {
+    // Vérifier si la touche est maintenue enfoncée
+    if (self.state.spaceKeyDown && self.state.lastResponseTime > 0) {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      console.warn('⚠️ Appui continu détecté - BLOQUÉ');
+      return false;
+    }
+
+    // Vérifier le délai minimum entre deux appuis (100ms)
+    const now = performance.now();
+    if (self.state.lastResponseTime > 0 && (now - self.state.lastResponseTime) < 100) {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      console.warn('⚠️ Appui trop rapide (<100ms) - BLOQUÉ');
+      return false;
+    }
+
+    // Appui valide : enregistrer le timestamp
+    self.state.lastResponseTime = now;
+    console.log('✓ Appui valide détecté');
+  }
+};
+
+// Ajouter les listeners (keypress avec capture=true pour être AVANT lab.js)
 document.addEventListener('keydown', handleKeyDown);
 document.addEventListener('keyup', handleKeyUp);
+document.addEventListener('keypress', handleKeyPress, true);
 
 // Nettoyer à la fin
 this.on('end', function() {
   document.removeEventListener('keydown', handleKeyDown);
   document.removeEventListener('keyup', handleKeyUp);
+  document.removeEventListener('keypress', handleKeyPress, true);
 });
 
 function updateCounter() {
@@ -1296,23 +1298,15 @@ this.state.running = false;
 // Enregistrer les données
 this.data.rt = this.data.duration;
 
-// Vérifier si c'est un appui continu
-if (this.state.continuousPress) {
-  this.data.response_type = 'continuous_press';
-  this.data.valid_response = false;
-  console.log('⚠️ Réponse invalide : appui continu ou trop rapide');
-} else if (this.data.ended_on === 'timeout') {
+// Classifier le type de réponse
+if (this.data.ended_on === 'timeout') {
   this.data.response_type = 'no_response';
-  this.data.valid_response = false;
 } else if (this.data.rt < 100) {
   this.data.response_type = 'anticipation';
-  this.data.valid_response = false;
 } else if (this.data.rt > 500) {
   this.data.response_type = 'lapse';
-  this.data.valid_response = true; // Les lapses sont valides mais lents
 } else {
   this.data.response_type = 'normal';
-  this.data.valid_response = true;
 }
 },
                   "run": function anonymous() {
@@ -1328,25 +1322,7 @@ const self = this;
 // Détecter les appuis continus sur la barre espace
 const handleKeyDown = function(e) {
   if (e.code === 'Space' || e.key === ' ') {
-    if (self.state.spaceKeyDown) {
-      // La touche est déjà enfoncée = appui continu détecté
-      e.preventDefault();
-      self.state.continuousPress = true;
-      console.warn('⚠️ Appui continu détecté - réponse ignorée');
-      return;
-    }
-
-    // Vérifier le délai minimum entre deux appuis (100ms)
-    const now = performance.now();
-    if (self.state.lastResponseTime > 0 && (now - self.state.lastResponseTime) < 100) {
-      e.preventDefault();
-      self.state.continuousPress = true;
-      console.warn('⚠️ Appui trop rapide détecté - réponse ignorée');
-      return;
-    }
-
     self.state.spaceKeyDown = true;
-    self.state.lastResponseTime = now;
   }
 };
 
@@ -1356,14 +1332,42 @@ const handleKeyUp = function(e) {
   }
 };
 
-// Ajouter les listeners
+// Intercepter AVANT lab.js pour bloquer les appuis invalides
+const handleKeyPress = function(e) {
+  if (e.code === 'Space' || e.key === ' ' || e.keyCode === 32) {
+    // Vérifier si la touche est maintenue enfoncée
+    if (self.state.spaceKeyDown && self.state.lastResponseTime > 0) {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      console.warn('⚠️ Appui continu détecté - BLOQUÉ');
+      return false;
+    }
+
+    // Vérifier le délai minimum entre deux appuis (100ms)
+    const now = performance.now();
+    if (self.state.lastResponseTime > 0 && (now - self.state.lastResponseTime) < 100) {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      console.warn('⚠️ Appui trop rapide (<100ms) - BLOQUÉ');
+      return false;
+    }
+
+    // Appui valide : enregistrer le timestamp
+    self.state.lastResponseTime = now;
+    console.log('✓ Appui valide détecté');
+  }
+};
+
+// Ajouter les listeners (keypress avec capture=true pour être AVANT lab.js)
 document.addEventListener('keydown', handleKeyDown);
 document.addEventListener('keyup', handleKeyUp);
+document.addEventListener('keypress', handleKeyPress, true);
 
 // Nettoyer à la fin
 this.on('end', function() {
   document.removeEventListener('keydown', handleKeyDown);
   document.removeEventListener('keyup', handleKeyUp);
+  document.removeEventListener('keypress', handleKeyPress, true);
 });
 
 function updateCounter() {
@@ -1430,6 +1434,61 @@ setTimeout(() => {
       "title": "Arreter_Musique_Finale",
       "content": "\u003Cmain class=\"content-vertical-center content-horizontal-center\"\u003E\r\n  \u003Cdiv style=\"text-align: center;\"\u003E\r\n    \u003Cp style=\"font-size: 24px;\"\u003EArrêt de la musique...\u003C\u002Fp\u003E\r\n  \u003C\u002Fdiv\u003E\r\n\u003C\u002Fmain\u003E",
       "timeout": "1000"
+    },
+    {
+      "type": "lab.html.Screen",
+      "files": {},
+      "responses": {
+        "keypress(Space)": "continue"
+      },
+      "parameters": {},
+      "messageHandlers": {
+        "before:prepare": function anonymous() {
+// Calculer les statistiques PVT globales
+const datastore = this.options.datastore;
+
+// Récupérer toutes les réponses PVT (Bloc 1 et Bloc 2)
+const pvtData = datastore.data.filter(d =>
+  (d.sender === 'Compteur' || d.title === 'Compteur') &&
+  d.rt !== undefined &&
+  d.response_type !== 'no_response'
+);
+
+// Calculer les métriques
+const validResponses = pvtData.filter(d => d.response_type === 'normal');
+const anticipations = pvtData.filter(d => d.response_type === 'anticipation');
+const lapses = pvtData.filter(d => d.response_type === 'lapse');
+
+const totalTrials = pvtData.length;
+const meanRT = validResponses.length > 0
+  ? Math.round(validResponses.reduce((sum, d) => sum + d.rt, 0) / validResponses.length)
+  : 0;
+const minRT = validResponses.length > 0
+  ? Math.min(...validResponses.map(d => d.rt))
+  : 0;
+const maxRT = validResponses.length > 0
+  ? Math.max(...validResponses.map(d => d.rt))
+  : 0;
+
+// Stocker dans les paramètres pour l'affichage
+this.parameters.totalTrials = totalTrials;
+this.parameters.meanRT = meanRT;
+this.parameters.minRT = Math.round(minRT);
+this.parameters.maxRT = Math.round(maxRT);
+this.parameters.anticipations = anticipations.length;
+this.parameters.lapses = lapses.length;
+this.parameters.validCount = validResponses.length;
+
+console.log('📊 Stats PVT calculées:', {
+  totalTrials,
+  meanRT,
+  anticipations: anticipations.length,
+  lapses: lapses.length
+});
+}
+      },
+      "title": "Feedback_PVT",
+      "content": "<main class=\"content-vertical-center content-horizontal-center\">\n  <div style=\"max-width: 700px; background: white; padding: 40px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1);\">\n    <h1 style=\"text-align: center; color: #0066cc; margin-bottom: 30px;\">📊 Résultats de vos tâches PVT</h1>\n    \n    <div style=\"background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; border-radius: 15px; text-align: center; margin-bottom: 30px;\">\n      <p style=\"font-size: 18px; margin: 0 0 10px 0; opacity: 0.9;\">Temps de réaction moyen</p>\n      <p style=\"font-size: 64px; font-weight: bold; margin: 0; font-family: monospace;\">${parameters.meanRT}</p>\n      <p style=\"font-size: 24px; margin: 10px 0 0 0;\">millisecondes</p>\n    </div>\n    \n    <div style=\"display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px;\">\n      <div style=\"background: #f0f9ff; padding: 20px; border-radius: 12px; text-align: center;\">\n        <p style=\"font-size: 36px; font-weight: bold; color: #0066cc; margin: 0;\">${parameters.minRT}</p>\n        <p style=\"font-size: 14px; color: #666; margin: 8px 0 0 0;\">Plus rapide</p>\n      </div>\n      <div style=\"background: #fef3c7; padding: 20px; border-radius: 12px; text-align: center;\">\n        <p style=\"font-size: 36px; font-weight: bold; color: #d97706; margin: 0;\">${parameters.maxRT}</p>\n        <p style=\"font-size: 14px; color: #666; margin: 8px 0 0 0;\">Plus lent</p>\n      </div>\n    </div>\n    \n    <div style=\"background: #f9fafb; padding: 25px; border-radius: 12px; margin-bottom: 30px;\">\n      <h3 style=\"margin: 0 0 15px 0; color: #374151;\">Détails de performance :</h3>\n      <div style=\"display: flex; justify-content: space-between; margin-bottom: 10px;\">\n        <span style=\"color: #6b7280;\">✓ Réponses valides :</span>\n        <span style=\"font-weight: bold; color: #059669;\">${parameters.validCount} / ${parameters.totalTrials}</span>\n      </div>\n      <div style=\"display: flex; justify-content: space-between; margin-bottom: 10px;\">\n        <span style=\"color: #6b7280;\">⚡ Anticipations :</span>\n        <span style=\"font-weight: bold; color: #dc2626;\">${parameters.anticipations}</span>\n      </div>\n      <div style=\"display: flex; justify-content: space-between;\">\n        <span style=\"color: #6b7280;\">😴 Lapses (>500ms) :</span>\n        <span style=\"font-weight: bold; color: #f59e0b;\">${parameters.lapses}</span>\n      </div>\n    </div>\n    \n    <div style=\"background: #ecfdf5; border-left: 4px solid #10b981; padding: 20px; border-radius: 8px; margin-bottom: 30px;\">\n      <p style=\"margin: 0; color: #065f46; font-size: 15px;\">\n        💡 <strong>Info :</strong> Un temps de réaction moyen entre 200-300ms est considéré comme excellent pour cette tâche.\n      </p>\n    </div>\n    \n    <p style=\"text-align: center; font-size: 18px; color: #666; margin-top: 30px;\">\n      Appuyez sur <strong style=\"background: #0066cc; color: white; padding: 8px 16px; border-radius: 6px;\">ESPACE</strong> pour continuer\n    </p>\n  </div>\n</main>"
     },
     {
       "type": "lab.html.Page",
