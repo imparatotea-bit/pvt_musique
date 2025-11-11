@@ -1,7 +1,8 @@
 const express = require('express');
 const cors = require('cors');
-const Database = require('better-sqlite3');
+const fs = require('fs');
 const path = require('path');
+const initSqlJs = require('sql.js');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -10,60 +11,83 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
-// Base de données SQLite
-const db = new Database(path.join(__dirname, 'participants.db'));
+// Variables globales pour la base de données
+let db = null;
+const DB_PATH = path.join(__dirname, 'participants.db');
 
-// Initialiser la base de données
-db.exec(`
-  CREATE TABLE IF NOT EXISTS assignments (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    participant_id TEXT UNIQUE NOT NULL,
-    groupe_habitude TEXT NOT NULL,
-    groupe_experimental INTEGER NOT NULL,
-    condition_ordre TEXT NOT NULL,
-    musique_bloc1 INTEGER NOT NULL,
-    musique_bloc2 INTEGER NOT NULL,
-    assigned_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    completed INTEGER DEFAULT 0
-  );
+// Initialiser SQL.js et la base de données
+async function initDatabase() {
+  const SQL = await initSqlJs();
 
-  CREATE TABLE IF NOT EXISTS counters (
-    groupe TEXT PRIMARY KEY,
-    count INTEGER DEFAULT 0
-  );
-`);
+  // Charger la DB existante ou créer une nouvelle
+  let buffer = null;
+  if (fs.existsSync(DB_PATH)) {
+    buffer = fs.readFileSync(DB_PATH);
+  }
 
-// Initialiser les compteurs si vide
-const initCounters = db.prepare(`
-  INSERT OR IGNORE INTO counters (groupe, count) VALUES (?, 0)
-`);
+  db = new SQL.Database(buffer);
 
-['habitue_C1', 'habitue_C2', 'non_habitue_C1', 'non_habitue_C2'].forEach(groupe => {
-  initCounters.run(groupe);
-});
+  // Créer les tables si elles n'existent pas
+  db.run(`
+    CREATE TABLE IF NOT EXISTS assignments (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      participant_id TEXT UNIQUE NOT NULL,
+      groupe_habitude TEXT NOT NULL,
+      groupe_experimental INTEGER NOT NULL,
+      condition_ordre TEXT NOT NULL,
+      musique_bloc1 INTEGER NOT NULL,
+      musique_bloc2 INTEGER NOT NULL,
+      assigned_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      completed INTEGER DEFAULT 0
+    );
+  `);
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS counters (
+      groupe TEXT PRIMARY KEY,
+      count INTEGER DEFAULT 0
+    );
+  `);
+
+  // Initialiser les compteurs
+  const counters = ['habitue_C1', 'habitue_C2', 'non_habitue_C1', 'non_habitue_C2'];
+  counters.forEach(groupe => {
+    db.run('INSERT OR IGNORE INTO counters (groupe, count) VALUES (?, 0)', [groupe]);
+  });
+
+  saveDatabase();
+  console.log('✅ Base de données initialisée');
+}
+
+// Sauvegarder la base de données
+function saveDatabase() {
+  if (db) {
+    const data = db.export();
+    fs.writeFileSync(DB_PATH, data);
+  }
+}
 
 // ============================================
 // FONCTION PRINCIPALE : ASSIGNER UNE CONDITION
 // ============================================
 function assignCondition(estHabitue) {
-  // Récupérer les compteurs actuels
-  const getCount = db.prepare('SELECT count FROM counters WHERE groupe = ?');
-
   const prefix = estHabitue ? 'habitue' : 'non_habitue';
-  const countC1 = getCount.get(`${prefix}_C1`).count;
-  const countC2 = getCount.get(`${prefix}_C2`).count;
+
+  const result = db.exec(`SELECT count FROM counters WHERE groupe IN ('${prefix}_C1', '${prefix}_C2')`);
+  const counts = result[0]?.values || [];
+
+  const countC1 = counts[0]?.[0] || 0;
+  const countC2 = counts[1]?.[0] || 0;
 
   console.log(`📊 Compteurs actuels pour ${prefix}: C1=${countC1}, C2=${countC2}`);
 
-  // Déterminer quelle condition assigner (équilibrage)
+  // Déterminer quelle condition assigner
   let assignC1;
-
   if (countC1 < countC2) {
-    assignC1 = true; // Assigner à C1 (moins remplie)
+    assignC1 = true;
   } else if (countC2 < countC1) {
-    assignC1 = false; // Assigner à C2 (moins remplie)
+    assignC1 = false;
   } else {
-    // Égalité → randomiser
     assignC1 = Math.random() < 0.5;
   }
 
@@ -72,13 +96,11 @@ function assignCondition(estHabitue) {
 
   if (estHabitue) {
     if (assignC1) {
-      // Habitué → C1 (Musique puis Silence)
       groupeExperimental = 1;
       condition = 'musique_puis_silence';
       musiqueBloc1 = 1;
       musiqueBloc2 = 0;
     } else {
-      // Habitué → C2 (Silence puis Musique)
       groupeExperimental = 2;
       condition = 'silence_puis_musique';
       musiqueBloc1 = 0;
@@ -86,13 +108,11 @@ function assignCondition(estHabitue) {
     }
   } else {
     if (assignC1) {
-      // Non-habitué → C1 (Musique puis Silence)
       groupeExperimental = 3;
       condition = 'musique_puis_silence';
       musiqueBloc1 = 1;
       musiqueBloc2 = 0;
     } else {
-      // Non-habitué → C2 (Silence puis Musique)
       groupeExperimental = 4;
       condition = 'silence_puis_musique';
       musiqueBloc1 = 0;
@@ -114,8 +134,7 @@ function assignCondition(estHabitue) {
 // ROUTES API
 // ============================================
 
-// GET /api/assign
-// Assigner une condition au participant
+// POST /api/assign
 app.post('/api/assign', (req, res) => {
   try {
     const { participant_id, habitude_score } = req.body;
@@ -127,49 +146,46 @@ app.post('/api/assign', (req, res) => {
     }
 
     // Vérifier si déjà assigné
-    const existing = db.prepare('SELECT * FROM assignments WHERE participant_id = ?').get(participant_id);
+    const existing = db.exec('SELECT * FROM assignments WHERE participant_id = ?', [participant_id]);
 
-    if (existing) {
-      console.log(`♻️  Participant ${participant_id} déjà assigné (groupe ${existing.groupe_experimental})`);
+    if (existing.length > 0 && existing[0].values.length > 0) {
+      const row = existing[0].values[0];
+      console.log(`♻️  Participant ${participant_id} déjà assigné`);
       return res.json({
-        groupe_experimental: existing.groupe_experimental,
-        condition_ordre: existing.condition_ordre,
-        musique_bloc1: existing.musique_bloc1 === 1,
-        musique_bloc2: existing.musique_bloc2 === 1,
-        groupe_habitude: existing.groupe_habitude,
+        groupe_experimental: row[3],
+        condition_ordre: row[4],
+        musique_bloc1: row[5] === 1,
+        musique_bloc2: row[6] === 1,
+        groupe_habitude: row[2],
         already_assigned: true
       });
     }
 
-    // Déterminer habitude (seuil à 5)
+    // Déterminer habitude
     const estHabitue = parseInt(habitude_score) >= 5;
-
-    // Assigner la condition
     const assignment = assignCondition(estHabitue);
 
-    // Enregistrer dans la base de données
-    const insert = db.prepare(`
+    // Insérer dans la base
+    db.run(`
       INSERT INTO assignments
       (participant_id, groupe_habitude, groupe_experimental, condition_ordre, musique_bloc1, musique_bloc2)
       VALUES (?, ?, ?, ?, ?, ?)
-    `);
-
-    insert.run(
+    `, [
       participant_id,
       assignment.groupeHabitude,
       assignment.groupeExperimental,
       assignment.condition,
       assignment.musiqueBloc1,
       assignment.musiqueBloc2
-    );
+    ]);
 
     // Incrémenter le compteur
-    const updateCounter = db.prepare(`
-      UPDATE counters SET count = count + 1 WHERE groupe = ?
-    `);
-    updateCounter.run(`${assignment.groupeHabitude}_${assignment.assignedGroup}`);
+    db.run('UPDATE counters SET count = count + 1 WHERE groupe = ?',
+      [`${assignment.groupeHabitude}_${assignment.assignedGroup}`]);
 
-    console.log(`✅ Assignation: Participant ${participant_id} → Groupe ${assignment.groupeExperimental} (${assignment.condition})`);
+    saveDatabase();
+
+    console.log(`✅ Assignation: ${participant_id} → Groupe ${assignment.groupeExperimental}`);
 
     res.json({
       groupe_experimental: assignment.groupeExperimental,
@@ -187,7 +203,6 @@ app.post('/api/assign', (req, res) => {
 });
 
 // POST /api/complete
-// Marquer un participant comme ayant terminé
 app.post('/api/complete', (req, res) => {
   try {
     const { participant_id } = req.body;
@@ -196,15 +211,11 @@ app.post('/api/complete', (req, res) => {
       return res.status(400).json({ error: 'participant_id requis' });
     }
 
-    const update = db.prepare('UPDATE assignments SET completed = 1 WHERE participant_id = ?');
-    const result = update.run(participant_id);
+    db.run('UPDATE assignments SET completed = 1 WHERE participant_id = ?', [participant_id]);
+    saveDatabase();
 
-    if (result.changes > 0) {
-      console.log(`✅ Participant ${participant_id} marqué comme terminé`);
-      res.json({ success: true });
-    } else {
-      res.status(404).json({ error: 'Participant non trouvé' });
-    }
+    console.log(`✅ Participant ${participant_id} marqué comme terminé`);
+    res.json({ success: true });
 
   } catch (error) {
     console.error('❌ Erreur completion:', error);
@@ -213,21 +224,24 @@ app.post('/api/complete', (req, res) => {
 });
 
 // GET /api/stats
-// Statistiques de distribution
 app.get('/api/stats', (req, res) => {
   try {
-    const counters = db.prepare('SELECT * FROM counters ORDER BY groupe').all();
-    const total = db.prepare('SELECT COUNT(*) as count FROM assignments').get();
-    const completed = db.prepare('SELECT COUNT(*) as count FROM assignments WHERE completed = 1').get();
+    const countersResult = db.exec('SELECT * FROM counters ORDER BY groupe');
+    const totalResult = db.exec('SELECT COUNT(*) as count FROM assignments');
+    const completedResult = db.exec('SELECT COUNT(*) as count FROM assignments WHERE completed = 1');
+
+    const counters = countersResult[0]?.values || [];
+    const total = totalResult[0]?.values[0]?.[0] || 0;
+    const completed = completedResult[0]?.values[0]?.[0] || 0;
 
     const stats = {
-      total: total.count,
-      completed: completed.count,
+      total,
+      completed,
       distribution: {}
     };
 
     counters.forEach(row => {
-      stats.distribution[row.groupe] = row.count;
+      stats.distribution[row[0]] = row[1];
     });
 
     res.json(stats);
@@ -239,15 +253,17 @@ app.get('/api/stats', (req, res) => {
 });
 
 // GET /api/export
-// Exporter toutes les assignations (CSV)
 app.get('/api/export', (req, res) => {
   try {
-    const assignments = db.prepare('SELECT * FROM assignments ORDER BY assigned_at').all();
+    const result = db.exec('SELECT * FROM assignments ORDER BY assigned_at');
 
-    // Générer CSV
-    const headers = Object.keys(assignments[0] || {}).join(',');
-    const rows = assignments.map(row => Object.values(row).join(','));
-    const csv = [headers, ...rows].join('\n');
+    if (result.length === 0) {
+      return res.send('id,participant_id,groupe_habitude,groupe_experimental,condition_ordre,musique_bloc1,musique_bloc2,assigned_at,completed\n');
+    }
+
+    const headers = ['id', 'participant_id', 'groupe_habitude', 'groupe_experimental', 'condition_ordre', 'musique_bloc1', 'musique_bloc2', 'assigned_at', 'completed'];
+    const rows = result[0].values.map(row => row.join(','));
+    const csv = [headers.join(','), ...rows].join('\n');
 
     res.setHeader('Content-Type', 'text/csv');
     res.setHeader('Content-Disposition', 'attachment; filename=assignments.csv');
@@ -260,78 +276,176 @@ app.get('/api/export', (req, res) => {
 });
 
 // GET /
-// Page d'accueil avec stats
 app.get('/', (req, res) => {
-  const counters = db.prepare('SELECT * FROM counters ORDER BY groupe').all();
-  const total = db.prepare('SELECT COUNT(*) as count FROM assignments').get();
-  const completed = db.prepare('SELECT COUNT(*) as count FROM assignments WHERE completed = 1').get();
+  try {
+    const countersResult = db.exec('SELECT * FROM counters ORDER BY groupe');
+    const totalResult = db.exec('SELECT COUNT(*) as count FROM assignments');
+    const completedResult = db.exec('SELECT COUNT(*) as count FROM assignments WHERE completed = 1');
 
-  let html = `
-<!DOCTYPE html>
+    const counters = countersResult[0]?.values || [];
+    const total = totalResult[0]?.values[0]?.[0] || 0;
+    const completed = completedResult[0]?.values[0]?.[0] || 0;
+
+    let html = `
+<!doctype html>
 <html>
 <head>
-  <meta charset="utf-8">
-  <title>Backend PVT - Statistiques</title>
-  <style>
-    body { font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px; }
-    h1 { color: #333; }
-    table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-    th, td { padding: 12px; text-align: left; border: 1px solid #ddd; }
-    th { background: #4CAF50; color: white; }
-    .total { font-size: 24px; font-weight: bold; color: #4CAF50; }
-    .btn { background: #008CBA; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block; margin: 10px 5px; }
-  </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <title>Backend PVT - Dashboard</title>
 </head>
-<body>
-  <h1>🎯 Backend PVT - Statistiques en temps réel</h1>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen p-8">
+  <div class="max-w-6xl mx-auto">
+    <!-- Header -->
+    <div class="bg-white rounded-2xl shadow-xl p-8 mb-8">
+      <div class="flex items-center justify-between">
+        <div>
+          <h1 class="text-4xl font-bold text-gray-800 mb-2">🎯 Backend PVT</h1>
+          <p class="text-gray-600">Équilibrage automatique des conditions expérimentales</p>
+        </div>
+        <div class="text-right">
+          <div class="text-5xl font-bold text-indigo-600">${total}</div>
+          <div class="text-sm text-gray-600 uppercase tracking-wide">Participants</div>
+        </div>
+      </div>
+    </div>
 
-  <div style="background: #f0f0f0; padding: 20px; border-radius: 10px; margin: 20px 0;">
-    <p>Total participants assignés : <span class="total">${total.count}</span></p>
-    <p>Participants ayant terminé : <span class="total">${completed.count}</span></p>
-    <p>En cours : <span class="total">${total.count - completed.count}</span></p>
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      <!-- Total -->
+      <div class="bg-white rounded-xl shadow-lg p-6">
+        <div class="flex items-center">
+          <div class="p-3 rounded-full bg-blue-100 text-blue-600 text-2xl mr-4">
+            👥
+          </div>
+          <div>
+            <div class="text-3xl font-bold text-gray-800">${total}</div>
+            <div class="text-sm text-gray-600">Total assignés</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Completed -->
+      <div class="bg-white rounded-xl shadow-lg p-6">
+        <div class="flex items-center">
+          <div class="p-3 rounded-full bg-green-100 text-green-600 text-2xl mr-4">
+            ✅
+          </div>
+          <div>
+            <div class="text-3xl font-bold text-gray-800">${completed}</div>
+            <div class="text-sm text-gray-600">Terminés</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- In Progress -->
+      <div class="bg-white rounded-xl shadow-lg p-6">
+        <div class="flex items-center">
+          <div class="p-3 rounded-full bg-yellow-100 text-yellow-600 text-2xl mr-4">
+            ⏳
+          </div>
+          <div>
+            <div class="text-3xl font-bold text-gray-800">${total - completed}</div>
+            <div class="text-sm text-gray-600">En cours</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Distribution Table -->
+    <div class="bg-white rounded-2xl shadow-xl p-8 mb-8">
+      <h2 class="text-2xl font-bold text-gray-800 mb-6">📊 Distribution par groupe</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        ${counters.map(row => {
+          const [groupe, count] = row;
+          const isHabitue = groupe.startsWith('habitue');
+          const isC1 = groupe.endsWith('C1');
+          const bgColor = isHabitue ? 'bg-indigo-50' : 'bg-purple-50';
+          const textColor = isHabitue ? 'text-indigo-600' : 'text-purple-600';
+          const icon = isHabitue ? '🎵' : '🔇';
+          const condition = isC1 ? 'M→S' : 'S→M';
+
+          return `
+          <div class="${bgColor} rounded-xl p-6 border-2 ${isHabitue ? 'border-indigo-200' : 'border-purple-200'}">
+            <div class="flex items-center justify-between">
+              <div>
+                <div class="text-sm font-semibold ${textColor} uppercase tracking-wide mb-1">
+                  ${groupe.replace('_', ' → ')}
+                </div>
+                <div class="text-gray-600 text-sm">${icon} ${condition}</div>
+              </div>
+              <div class="text-4xl font-bold ${textColor}">${count}</div>
+            </div>
+            <div class="mt-4 bg-white rounded-lg h-2 overflow-hidden">
+              <div class="h-full ${isHabitue ? 'bg-indigo-500' : 'bg-purple-500'}"
+                   style="width: ${total > 0 ? (count / total * 100) : 0}%"></div>
+            </div>
+          </div>
+          `;
+        }).join('')}
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="flex gap-4">
+      <a href="/api/export"
+         class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-4 px-6 rounded-xl shadow-lg transition duration-200 text-center">
+        📥 Exporter CSV
+      </a>
+      <a href="/api/stats"
+         class="flex-1 bg-gray-600 hover:bg-gray-700 text-white font-semibold py-4 px-6 rounded-xl shadow-lg transition duration-200 text-center">
+        📊 JSON Stats
+      </a>
+      <button onclick="location.reload()"
+              class="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-4 px-6 rounded-xl shadow-lg transition duration-200">
+        🔄 Actualiser
+      </button>
+    </div>
+
+    <!-- API Info -->
+    <div class="mt-8 bg-gray-800 rounded-xl p-6 text-white">
+      <h3 class="font-bold text-lg mb-3">🔌 Endpoints API</h3>
+      <div class="space-y-2 font-mono text-sm">
+        <div><span class="text-green-400">POST</span> /api/assign - Assigner une condition</div>
+        <div><span class="text-blue-400">POST</span> /api/complete - Marquer comme terminé</div>
+        <div><span class="text-yellow-400">GET</span> /api/stats - Statistiques JSON</div>
+        <div><span class="text-purple-400">GET</span> /api/export - Export CSV</div>
+      </div>
+    </div>
   </div>
 
-  <h2>Distribution par groupe</h2>
-  <table>
-    <tr>
-      <th>Groupe</th>
-      <th>Nombre de participants</th>
-    </tr>
-    ${counters.map(row => `
-      <tr>
-        <td>${row.groupe.replace('_', ' → ')}</td>
-        <td>${row.count}</td>
-      </tr>
-    `).join('')}
-  </table>
-
-  <a href="/api/export" class="btn">📥 Exporter les assignations (CSV)</a>
-  <a href="/api/stats" class="btn">📊 JSON Stats</a>
-
-  <p style="margin-top: 40px; color: #666;">
-    <strong>Endpoints API :</strong><br>
-    POST /api/assign - Assigner une condition<br>
-    POST /api/complete - Marquer comme terminé<br>
-    GET /api/stats - Obtenir les statistiques<br>
-    GET /api/export - Exporter CSV
-  </p>
+  <script>
+    // Auto-refresh toutes les 30 secondes
+    setTimeout(() => location.reload(), 30000);
+  </script>
 </body>
 </html>
-  `;
+    `;
 
-  res.send(html);
+    res.send(html);
+
+  } catch (error) {
+    console.error('❌ Erreur dashboard:', error);
+    res.status(500).send('Erreur serveur');
+  }
 });
 
 // Démarrer le serveur
-app.listen(PORT, () => {
-  console.log(`🚀 Serveur backend PVT démarré sur le port ${PORT}`);
-  console.log(`📊 Statistiques: http://localhost:${PORT}/`);
-  console.log(`🔌 API: http://localhost:${PORT}/api/assign`);
+initDatabase().then(() => {
+  app.listen(PORT, () => {
+    console.log(`🚀 Serveur backend PVT démarré sur le port ${PORT}`);
+    console.log(`📊 Dashboard: http://localhost:${PORT}/`);
+    console.log(`🔌 API: http://localhost:${PORT}/api/assign`);
+  });
+}).catch(err => {
+  console.error('❌ Erreur initialisation DB:', err);
+  process.exit(1);
 });
 
 // Graceful shutdown
 process.on('SIGINT', () => {
   console.log('\n👋 Arrêt du serveur...');
-  db.close();
+  saveDatabase();
   process.exit(0);
 });
