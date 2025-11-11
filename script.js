@@ -115,9 +115,9 @@ button.onclick = function() {
       },
       "parameters": {},
       "messageHandlers": {
-        "after:end": function anonymous(
+        "after:end": async function anonymous(
 ) {
-// ===== ASSIGNATION AUTOMATIQUE ALÉATOIRE =====
+// ===== ASSIGNATION VIA BACKEND (ÉQUILIBRAGE AUTOMATIQUE) =====
 
 // 1. Créer un ID unique basé sur le timestamp
 const timestamp = Date.now();
@@ -132,66 +132,103 @@ const sliderValue = parseInt(this.data.habitude_musique_slider) || 5;
 
 console.log("Score habitude musicale:", sliderValue);
 
-// 3. Déterminer le groupe d'habitude (seuil à 5)
-const estHabitue = sliderValue >= 5;
-const groupeHabitude = estHabitue ? "habitue" : "non_habitue";
+// 3. URL de l'API backend (À REMPLACER par ton URL de production)
+const BACKEND_URL = window.BACKEND_URL || 'http://localhost:3000';
 
-console.log("Est habitué:", estHabitue, "(" + groupeHabitude + ")");
+try {
+  // 4. Appeler le backend pour obtenir l'assignation
+  console.log("📡 Appel au backend pour assignation...");
 
-// 4. Assignation aléatoire 50/50 pour l'ordre des conditions
-const assignationAleatoire = Math.random() < 0.5;
+  const response = await fetch(`${BACKEND_URL}/api/assign`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      participant_id: participantID,
+      habitude_score: sliderValue
+    })
+  });
 
-let condition, groupeExperimental, musiqueBloc1, musiqueBloc2;
-
-if (estHabitue) {
-  if (assignationAleatoire) {
-    // Habitué → Condition 1 (Musique puis Silence)
-    condition = "musique_puis_silence";
-    groupeExperimental = 1;
-    musiqueBloc1 = true;   // Bloc 1 avec musique
-    musiqueBloc2 = false;  // Bloc 2 en silence
-  } else {
-    // Habitué → Condition 2 (Silence puis Musique)
-    condition = "silence_puis_musique";
-    groupeExperimental = 2;
-    musiqueBloc1 = false;  // Bloc 1 en silence
-    musiqueBloc2 = true;   // Bloc 2 avec musique
+  if (!response.ok) {
+    throw new Error(`Erreur HTTP: ${response.status}`);
   }
-} else {
-  if (assignationAleatoire) {
-    // Non-habitué → Condition 1 (Musique puis Silence)
-    condition = "musique_puis_silence";
-    groupeExperimental = 3;
-    musiqueBloc1 = true;   // Bloc 1 avec musique
-    musiqueBloc2 = false;  // Bloc 2 en silence
+
+  const assignment = await response.json();
+
+  console.log("✅ Assignation reçue du backend:", assignment);
+
+  // 5. Stocker toutes les variables importantes
+  this.data.participant_id = participantID;
+  this.data.timestamp_participation = timestamp;
+  this.data.habitude_musique_score = sliderValue;
+  this.data.est_habitue = sliderValue >= 5;
+  this.data.groupe_habitude = assignment.groupe_habitude;
+  this.data.groupe_experimental = assignment.groupe_experimental;
+  this.data.condition_ordre = assignment.condition_ordre;
+  this.data.musique_bloc1 = assignment.musique_bloc1;
+  this.data.musique_bloc2 = assignment.musique_bloc2;
+  this.data.backend_assigned = true;
+
+  console.log("=== RÉSULTAT ASSIGNATION ===");
+  console.log("ID participant:", participantID);
+  console.log("Habitude musicale:", sliderValue + "/10 →", assignment.groupe_habitude);
+  console.log("Groupe expérimental:", assignment.groupe_experimental);
+  console.log("Condition:", assignment.condition_ordre);
+  console.log("Bloc 1 (Cat1+PVT1): Musique =", assignment.musique_bloc1);
+  console.log("Bloc 2 (Cat2+PVT2): Musique =", assignment.musique_bloc2);
+  console.log("===========================");
+
+} catch (error) {
+  console.error("❌ Erreur connexion au backend:", error);
+  console.log("⚠️ Fallback: assignation aléatoire locale");
+
+  // FALLBACK : Assignation aléatoire si backend indisponible
+  const estHabitue = sliderValue >= 5;
+  const groupeHabitude = estHabitue ? "habitue" : "non_habitue";
+  const assignationAleatoire = Math.random() < 0.5;
+
+  let condition, groupeExperimental, musiqueBloc1, musiqueBloc2;
+
+  if (estHabitue) {
+    if (assignationAleatoire) {
+      condition = "musique_puis_silence";
+      groupeExperimental = 1;
+      musiqueBloc1 = true;
+      musiqueBloc2 = false;
+    } else {
+      condition = "silence_puis_musique";
+      groupeExperimental = 2;
+      musiqueBloc1 = false;
+      musiqueBloc2 = true;
+    }
   } else {
-    // Non-habitué → Condition 2 (Silence puis Musique)
-    condition = "silence_puis_musique";
-    groupeExperimental = 4;
-    musiqueBloc1 = false;  // Bloc 1 en silence
-    musiqueBloc2 = true;   // Bloc 2 avec musique
+    if (assignationAleatoire) {
+      condition = "musique_puis_silence";
+      groupeExperimental = 3;
+      musiqueBloc1 = true;
+      musiqueBloc2 = false;
+    } else {
+      condition = "silence_puis_musique";
+      groupeExperimental = 4;
+      musiqueBloc1 = false;
+      musiqueBloc2 = true;
+    }
   }
+
+  this.data.participant_id = participantID;
+  this.data.timestamp_participation = timestamp;
+  this.data.habitude_musique_score = sliderValue;
+  this.data.est_habitue = estHabitue;
+  this.data.groupe_habitude = groupeHabitude;
+  this.data.groupe_experimental = groupeExperimental;
+  this.data.condition_ordre = condition;
+  this.data.musique_bloc1 = musiqueBloc1;
+  this.data.musique_bloc2 = musiqueBloc2;
+  this.data.backend_assigned = false;
+
+  console.log("Assignation locale (fallback):", {groupeExperimental, condition});
 }
-
-// 5. Stocker toutes les variables importantes
-this.data.participant_id = participantID;
-this.data.timestamp_participation = timestamp;
-this.data.habitude_musique_score = sliderValue;
-this.data.est_habitue = estHabitue;
-this.data.groupe_habitude = groupeHabitude;
-this.data.groupe_experimental = groupeExperimental;
-this.data.condition_ordre = condition;
-this.data.musique_bloc1 = musiqueBloc1;
-this.data.musique_bloc2 = musiqueBloc2;
-
-console.log("=== RÉSULTAT ASSIGNATION ===");
-console.log("ID participant:", participantID);
-console.log("Habitude musicale:", sliderValue + "/10 →", groupeHabitude);
-console.log("Groupe expérimental:", groupeExperimental);
-console.log("Condition:", condition);
-console.log("Bloc 1 (Cat1+PVT1): Musique =", musiqueBloc1);
-console.log("Bloc 2 (Cat2+PVT2): Musique =", musiqueBloc2);
-console.log("===========================");
 }
       },
       "title": "Questionnaire_initial"
