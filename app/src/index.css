@@ -1,0 +1,48 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply antialiased;
+  }
+
+  body {
+    @apply m-0 p-0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  }
+
+  html, body, #root {
+    @apply w-full h-full;
+  }
+}
+
+@layer components {
+  .gradient-text {
+    @apply bg-gradient-to-br from-notion-purple via-notion-blue to-notion-pink bg-clip-text text-transparent;
+  }
+
+  .btn-primary {
+    @apply px-8 py-4 rounded-2xl font-semibold text-white bg-gradient-to-r from-notion-purple to-notion-blue shadow-lg shadow-notion-purple/30 hover:shadow-xl hover:shadow-notion-purple/40 transition-all duration-300 hover:scale-105;
+  }
+
+  .btn-secondary {
+    @apply px-6 py-3 rounded-xl font-medium text-gray-700 bg-white border-2 border-gray-200 hover:border-notion-purple transition-all duration-300;
+  }
+
+  .card {
+    @apply bg-white/80 backdrop-blur-xl rounded-3xl shadow-xl shadow-black/5 border border-white/20 p-8;
+  }
+
+  .slider-custom {
+    @apply w-full h-3 bg-gradient-to-r from-notion-purple-light to-notion-blue-light rounded-full appearance-none cursor-pointer;
+  }
+
+  .slider-custom::-webkit-slider-thumb {
+    @apply appearance-none w-6 h-6 rounded-full bg-white border-3 border-notion-purple shadow-lg shadow-notion-purple/30 cursor-pointer hover:scale-110 transition-transform;
+  }
+
+  .slider-custom::-moz-range-thumb {
+    @apply w-6 h-6 rounded-full bg-white border-3 border-notion-purple shadow-lg shadow-notion-purple/30 cursor-pointer hover:scale-110 transition-transform;
+  }
+}

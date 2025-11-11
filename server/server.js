@@ -11,6 +11,10 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
+// Serve static files (audio, images)
+app.use('/audio', express.static(path.join(__dirname, '..', 'static', 'audio')));
+app.use('/images', express.static(path.join(__dirname, '..', 'static', 'images')));
+
 // Variables globales pour la base de données
 let db = null;
 const DB_PATH = path.join(__dirname, 'participants.db');
@@ -198,6 +202,90 @@ app.post('/api/assign', (req, res) => {
 
   } catch (error) {
     console.error('❌ Erreur assignation:', error);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
+// POST /api/assign-condition (Simple 50/50 balancing for React app)
+app.post('/api/assign-condition', (req, res) => {
+  try {
+    // Generate participant ID
+    const participant_id = Date.now().toString() + '-' + Math.random().toString(36).substr(2, 9);
+
+    // Simple 50/50 balancing: count music vs no_music
+    const musicResult = db.exec(`SELECT COUNT(*) FROM assignments WHERE condition_ordre LIKE '%musique%'`);
+    const noMusicResult = db.exec(`SELECT COUNT(*) FROM assignments WHERE condition_ordre = 'silence'`);
+
+    const musicCount = musicResult[0]?.values[0]?.[0] || 0;
+    const noMusicCount = noMusicResult[0]?.values[0]?.[0] || 0;
+
+    let condition;
+    if (musicCount < noMusicCount) {
+      condition = 'music';
+    } else if (noMusicCount < musicCount) {
+      condition = 'no_music';
+    } else {
+      condition = Math.random() < 0.5 ? 'music' : 'no_music';
+    }
+
+    // Insert into database with simplified schema
+    db.run(`
+      INSERT INTO assignments
+      (participant_id, groupe_habitude, groupe_experimental, condition_ordre, musique_bloc1, musique_bloc2)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `, [
+      participant_id,
+      'unknown', // Will be determined later from questionnaire
+      condition === 'music' ? 1 : 2,
+      condition === 'music' ? 'musique' : 'silence',
+      condition === 'music' ? 1 : 0,
+      condition === 'music' ? 1 : 0
+    ]);
+
+    saveDatabase();
+
+    console.log(`✅ Condition assignée: ${participant_id} → ${condition}`);
+
+    res.json({
+      participant_id,
+      condition
+    });
+
+  } catch (error) {
+    console.error('❌ Erreur assign-condition:', error);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
+// POST /api/save-data (Save complete experiment data)
+app.post('/api/save-data', (req, res) => {
+  try {
+    const data = req.body;
+
+    if (!data.participantId) {
+      return res.status(400).json({ error: 'participantId requis' });
+    }
+
+    // Save to JSON file
+    const dataDir = path.join(__dirname, 'data');
+    if (!fs.existsSync(dataDir)) {
+      fs.mkdirSync(dataDir, { recursive: true });
+    }
+
+    const filename = `participant_${data.participantId}_${Date.now()}.json`;
+    const filepath = path.join(dataDir, filename);
+
+    fs.writeFileSync(filepath, JSON.stringify(data, null, 2));
+
+    // Mark as completed
+    db.run('UPDATE assignments SET completed = 1 WHERE participant_id = ?', [data.participantId]);
+    saveDatabase();
+
+    console.log(`✅ Données sauvegardées: ${filename}`);
+    res.json({ success: true, filename });
+
+  } catch (error) {
+    console.error('❌ Erreur save-data:', error);
     res.status(500).json({ error: 'Erreur serveur' });
   }
 });
