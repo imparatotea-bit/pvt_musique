@@ -933,6 +933,25 @@ setTimeout(() => {
       "shuffle": true,
       "content": [
         {
+          "type": "lab.html.Page",
+          "items": [
+            {
+              "type": "text",
+              "content": "\u003Cmain class=\"content-vertical-center content-horizontal-center\"\u003E\n  \u003Cdiv style=\"max-width: 700px; text-align: center;\"\u003E\n    \u003Ch1\u003ETÂCHE DE CATÉGORISATION\u003C\u002Fh1\u003E\n    \n    \u003Cp style=\"font-size: 22px; margin: 30px 0;\"\u003E\n      Vous allez voir des \u003Cstrong\u003Eimages d'objets\u003C\u002Fstrong\u003E.\u003Cbr\u003E\n      Votre tâche : \u003Cstrong\u003Eindiquer si l'objet se trouve généralement à l'intérieur ou à l'extérieur d'une maison\u003C\u002Fstrong\u003E.\n    \u003C\u002Fp\u003E\n    \n    \u003Cdiv style=\"background: #f0f0f0; padding: 30px; border-radius: 15px; margin: 30px 0;\"\u003E\n      \u003Cp style=\"font-size: 24px; margin: 15px 0;\"\u003E\n        \u003Cstrong style=\"color: #0066cc;\"\u003EINTÉRIEUR\u003C\u002Fstrong\u003E → Appuyez sur \u003Cstrong\u003EF\u003C\u002Fstrong\u003E\n      \u003C\u002Fp\u003E\n      \u003Cp style=\"font-size: 24px; margin: 15px 0;\"\u003E\n        \u003Cstrong style=\"color: #228B22;\"\u003EEXTÉRIEUR\u003C\u002Fstrong\u003E → Appuyez sur \u003Cstrong\u003EJ\u003C\u002Fstrong\u003E\n      \u003C\u002Fp\u003E\n    \u003C\u002Fdiv\u003E\n    \n    \u003Cp style=\"font-size: 18px; color: #666; margin: 20px 0;\"\u003E\n      💡 \u003Cstrong\u003EExemples :\u003C\u002Fstrong\u003E\u003Cbr\u003E\n      Canapé, lampe, réfrigérateur → \u003Cstrong\u003EINTÉRIEUR (F)\u003C\u002Fstrong\u003E\u003Cbr\u003E\n      Arbre, voiture, balançoire → \u003Cstrong\u003EEXTÉRIEUR (J)\u003C\u002Fstrong\u003E\n    \u003C\u002Fp\u003E\n    \n    \u003Cp style=\"font-size: 18px; color: #666; margin: 20px 0;\"\u003E\n      ⚠️ Gardez vos doigts sur les touches \u003Cstrong\u003EF\u003C\u002Fstrong\u003E et \u003Cstrong\u003EJ\u003C\u002Fstrong\u003E\u003Cbr\u003E\n      Répondez \u003Cstrong\u003Erapidement\u003C\u002Fstrong\u003E selon votre première impression\n    \u003C\u002Fp\u003E\n    \n    \u003Cp style=\"font-size: 20px; margin-top: 40px;\"\u003E\n      Appuyez sur \u003Cstrong\u003EESPACE\u003C\u002Fstrong\u003E pour commencer\n    \u003C\u002Fp\u003E\n  \u003C\u002Fdiv\u003E\n\u003C\u002Fmain\u003E"
+            }
+          ],
+          "scrollTop": true,
+          "submitButtonText": "Continue →",
+          "submitButtonPosition": "hidden",
+          "files": {},
+          "responses": {
+            "keypress(Space)": ""
+          },
+          "parameters": {},
+          "messageHandlers": {},
+          "title": "Instructions_Cat"
+        },
+        {
           "type": "lab.flow.Loop",
           "templateParameters": [
             {
@@ -984,36 +1003,36 @@ if (questData) {
 // Attendre que le DOM soit prêt
 setTimeout(function() {
   const imageElement = document.getElementById('stimulus-image');
-  
+
   if (imageElement) {
     const imageFilename = this.parameters.image_file_name;
-    
+
     // Charger l'image (avec fallback)
     if (this.files && this.files[imageFilename]) {
       imageElement.src = this.files[imageFilename];
     } else {
       imageElement.src = imageFilename;
     }
-    
+
     // Enregistrer les données
     this.data.image_shown = imageFilename;
     this.data.object_name = this.parameters.Nom_image;
     this.data.correct_response = this.parameters.correct_category;
   }
-  
+
   // Gérer les clics sur les boutons
   const self = this;
-  
+
   const btnInt = document.getElementById('btn-interieur');
   const btnExt = document.getElementById('btn-exterieur');
-  
+
   if (btnInt) {
     btnInt.onclick = function() {
       self.data.response = 'f';
       self.end();
     };
   }
-  
+
   if (btnExt) {
     btnExt.onclick = function() {
       self.data.response = 'j';
@@ -1055,28 +1074,9 @@ this.data.rt = this.data.duration;
 }
             },
             "title": "Affichage_Image",
-            "content": "\u003Cdiv style=\"display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 20px;\"\u003E\r\n  \r\n  \u003Cdiv style=\"margin-bottom: 40px;\"\u003E\r\n    \u003Cimg id=\"stimulus-image\" \r\n         src=\"\" \r\n         style=\"max-width: 500px; max-height: 400px; border: 3px solid #ccc; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);\" \r\n         alt=\"Image stimulus\"\u003E\r\n  \u003C\u002Fdiv\u003E\r\n  \r\n  \u003Cdiv style=\"display: flex; gap: 40px;\"\u003E\r\n    \r\n    \u003Cbutton id=\"btn-interieur\" \r\n            style=\"width: 200px; height: 80px; font-size: 24px; font-weight: bold; background: #0066cc; color: white; border: none; border-radius: 15px; cursor: pointer; box-shadow: 0 4px 8px rgba(0,0,0,0.2); transition: all 0.2s;\"\r\n            onmouseover=\"this.style.transform='scale(1.05)'\"\r\n            onmouseout=\"this.style.transform='scale(1)'\"\u003E\r\n      🏠 INTÉRIEUR\u003Cbr\u003E\r\n      \u003Cspan style=\"font-size: 18px; font-weight: normal;\"\u003E(touche F)\u003C\u002Fspan\u003E\r\n    \u003C\u002Fbutton\u003E\r\n    \r\n    \u003Cbutton id=\"btn-exterieur\" \r\n            style=\"width: 200px; height: 80px; font-size: 24px; font-weight: bold; background: #228B22; color: white; border: none; border-radius: 15px; cursor: pointer; box-shadow: 0 4px 8px rgba(0,0,0,0.2); transition: all 0.2s;\"\r\n            onmouseover=\"this.style.transform='scale(1.05)'\"\r\n            onmouseout=\"this.style.transform='scale(1)'\"\u003E\r\n      🌳 EXTÉRIEUR\u003Cbr\u003E\r\n      \u003Cspan style=\"font-size: 18px; font-weight: normal;\"\u003E(touche J)\u003C\u002Fspan\u003E\r\n    \u003C\u002Fbutton\u003E\r\n    \r\n  \u003C\u002Fdiv\u003E\r\n  \r\n\u003C\u002Fdiv\u003E",
+            "content": "\u003Cdiv style=\"display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 20px;\"\u003E\r\n  \r\n  \u003Cdiv style=\"margin-bottom: 40px;\"\u003E\r\n    \u003Cimg id=\"stimulus-image\" \r\n         src=\"\" \r\n         style=\"max-width: 500px; max-height: 400px; border: 3px solid #ccc; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);\" \r\n         alt=\"Image stimulus\"\u003E\r\n  \u003C\u002Fdiv\u003E\r\n  \u003Cdiv style=\"display: flex; gap: 40px;\"\u003E\r\n    \r\n    \u003Cbutton id=\"btn-interieur\" \r\n            style=\"width: 200px; height: 80px; font-size: 24px; font-weight: bold; background: #0066cc; color: white; border: none; border-radius: 15px; cursor: pointer; box-shadow: 0 4px 8px rgba(0,0,0,0.2); transition: all 0.2s;\"\r\n            onmouseover=\"this.style.transform='scale(1.05)'\"\r\n            onmouseout=\"this.style.transform='scale(1)'\"\u003E\r\n      🏠 INTÉRIEUR\u003Cbr\u003E\r\n      \u003Cspan style=\"font-size: 18px; font-weight: normal;\"\u003E(touche F)\u003C\u002Fspan\u003E\r\n    \u003C\u002Fbutton\u003E\r\n    \r\n    \u003Cbutton id=\"btn-exterieur\" \r\n            style=\"width: 200px; height: 80px; font-size: 24px; font-weight: bold; background: #228B22; color: white; border: none; border-radius: 15px; cursor: pointer; box-shadow: 0 4px 8px rgba(0,0,0,0.2); transition: all 0.2s;\"\r\n            onmouseover=\"this.style.transform='scale(1.05)'\"\r\n            onmouseout=\"this.style.transform='scale(1)'\"\u003E\r\n      🌳 EXTÉRIEUR\u003Cbr\u003E\r\n      \u003Cspan style=\"font-size: 18px; font-weight: normal;\"\u003E(touche J)\u003C\u002Fspan\u003E\r\n    \u003C\u002Fbutton\u003E\r\n    \r\n  \u003C\u002Fdiv\u003E\r\n  \r\n\u003C\u002Fdiv\u003E",
             "timeout": "10000"
           }
-        },
-        {
-          "type": "lab.html.Page",
-          "items": [
-            {
-              "type": "text",
-              "content": "\u003Cmain class=\"content-vertical-center content-horizontal-center\"\u003E\n  \u003Cdiv style=\"max-width: 700px; text-align: center;\"\u003E\n    \u003Ch1\u003ETÂCHE DE CATÉGORISATION\u003C\u002Fh1\u003E\n    \n    \u003Cp style=\"font-size: 22px; margin: 30px 0;\"\u003E\n      Vous allez voir des \u003Cstrong\u003Eimages d'objets\u003C\u002Fstrong\u003E.\u003Cbr\u003E\n      Votre tâche : \u003Cstrong\u003Eindiquer si l'objet se trouve généralement à l'intérieur ou à l'extérieur d'une maison\u003C\u002Fstrong\u003E.\n    \u003C\u002Fp\u003E\n    \n    \u003Cdiv style=\"background: #f0f0f0; padding: 30px; border-radius: 15px; margin: 30px 0;\"\u003E\n      \u003Cp style=\"font-size: 24px; margin: 15px 0;\"\u003E\n        \u003Cstrong style=\"color: #0066cc;\"\u003EINTÉRIEUR\u003C\u002Fstrong\u003E → Appuyez sur \u003Cstrong\u003EF\u003C\u002Fstrong\u003E\n      \u003C\u002Fp\u003E\n      \u003Cp style=\"font-size: 24px; margin: 15px 0;\"\u003E\n        \u003Cstrong style=\"color: #228B22;\"\u003EEXTÉRIEUR\u003C\u002Fstrong\u003E → Appuyez sur \u003Cstrong\u003EJ\u003C\u002Fstrong\u003E\n      \u003C\u002Fp\u003E\n    \u003C\u002Fdiv\u003E\n    \n    \u003Cp style=\"font-size: 18px; color: #666; margin: 20px 0;\"\u003E\n      💡 \u003Cstrong\u003EExemples :\u003C\u002Fstrong\u003E\u003Cbr\u003E\n      Canapé, lampe, réfrigérateur → \u003Cstrong\u003EINTÉRIEUR (F)\u003C\u002Fstrong\u003E\u003Cbr\u003E\n      Arbre, voiture, balançoire → \u003Cstrong\u003EEXTÉRIEUR (J)\u003C\u002Fstrong\u003E\n    \u003C\u002Fp\u003E\n    \n    \u003Cp style=\"font-size: 18px; color: #666; margin: 20px 0;\"\u003E\n      ⚠️ Gardez vos doigts sur les touches \u003Cstrong\u003EF\u003C\u002Fstrong\u003E et \u003Cstrong\u003EJ\u003C\u002Fstrong\u003E\u003Cbr\u003E\n      Répondez \u003Cstrong\u003Erapidement\u003C\u002Fstrong\u003E selon votre première impression\n    \u003C\u002Fp\u003E\n    \n    \u003Cp style=\"font-size: 20px; margin-top: 40px;\"\u003E\n      Appuyez sur \u003Cstrong\u003EESPACE\u003C\u002Fstrong\u003E pour commencer\n    \u003C\u002Fp\u003E\n  \u003C\u002Fdiv\u003E\n\u003C\u002Fmain\u003E"
-            }
-          ],
-          "scrollTop": true,
-          "submitButtonText": "Continue →",
-          "submitButtonPosition": "hidden",
-          "files": {},
-          "responses": {
-            "keypress(Space)": ""
-          },
-          "parameters": {},
-          "messageHandlers": {},
-          "title": "Instructions_Cat"
         }
       ]
     },
