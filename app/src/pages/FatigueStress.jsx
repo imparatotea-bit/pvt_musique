@@ -21,8 +21,8 @@ export default function FatigueStress() {
 
   return (
     <Layout>
-      <div className="card">
-        <h1 className="text-4xl font-bold gradient-text mb-8 text-center">
+      <div className="card max-w-2xl mx-auto animate-fade-in">
+        <h1 className="text-4xl font-semibold text-apple-gray-900 mb-10 text-center tracking-tight">
           État actuel
         </h1>
 
@@ -35,7 +35,7 @@ export default function FatigueStress() {
             onChange={setFatigue}
           />
 
-          <div className="flex justify-between text-sm text-gray-500 -mt-8">
+          <div className="flex justify-between text-sm text-apple-gray-500 -mt-8">
             <span>Pas du tout fatigué(e)</span>
             <span>Extrêmement fatigué(e)</span>
           </div>
@@ -48,7 +48,7 @@ export default function FatigueStress() {
             onChange={setStress}
           />
 
-          <div className="flex justify-between text-sm text-gray-500 -mt-8">
+          <div className="flex justify-between text-sm text-apple-gray-500 -mt-8">
             <span>Pas du tout stressé(e)</span>
             <span>Extrêmement stressé(e)</span>
           </div>
@@ -56,7 +56,7 @@ export default function FatigueStress() {
           <div className="pt-4 flex justify-center">
             <button
               type="submit"
-              className="btn-primary text-xl"
+              className="btn-primary btn-large text-xl"
             >
               Continuer
             </button>

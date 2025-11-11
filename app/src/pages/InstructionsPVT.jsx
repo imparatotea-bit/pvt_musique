@@ -6,12 +6,12 @@ export default function InstructionsPVT() {
 
   return (
     <Layout>
-      <div className="card space-y-6">
-        <h1 className="text-4xl font-bold gradient-text text-center mb-8">
+      <div className="card max-w-2xl mx-auto animate-fade-in space-y-6">
+        <h1 className="text-4xl font-semibold text-apple-gray-900 text-center mb-10 tracking-tight">
           Instructions - Tâche de vigilance
         </h1>
 
-        <div className="space-y-4 text-lg text-gray-700">
+        <div className="space-y-4 text-lg text-apple-gray-700">
           <p>
             Dans cette tâche, vous allez devoir réagir le plus rapidement possible à l'apparition d'un stimulus.
           </p>
@@ -47,7 +47,7 @@ export default function InstructionsPVT() {
         <div className="pt-6 flex justify-center">
           <button
             onClick={() => navigate('/pvt-block-1')}
-            className="btn-primary text-xl"
+            className="btn-primary btn-large text-xl"
           >
             Commencer le Bloc 1
           </button>

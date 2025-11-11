@@ -6,9 +6,9 @@ import Layout from '../components/Layout';
 export default function PVTTask({ block }) {
   const navigate = useNavigate();
   const { addTrialData } = useExperiment();
-  const [trialState, setTrialState] = useState('waiting'); // waiting, fixation, stimulus, feedback, break
+  const [trialState, setTrialState] = useState('waiting');
   const [currentTrial, setCurrentTrial] = useState(0);
-  const [displayNumber, setDisplayNumber] = useState('');
+  const [timerValue, setTimerValue] = useState('0000');
   const [feedback, setFeedback] = useState(null);
   const [isComplete, setIsComplete] = useState(false);
 
@@ -27,16 +27,41 @@ export default function PVTTask({ block }) {
     currentDelay: 0,
   });
 
+  // Timer interval reference
+  const timerIntervalRef = useRef(null);
+
   const totalTrials = 20;
 
-  // Generate random delay between 2000-10000ms
+  // Generate random delay between 2000-10000ms (max 10s comme demandé)
   const getRandomDelay = () => {
-    return 2000 + Math.random() * 8000;
+    return 2000 + Math.random() * 8000; // 2-10 secondes
   };
+
+  // Start the timer that counts up
+  const startTimer = useCallback(() => {
+    const startTime = performance.now();
+    timingRef.current.stimulusOnsetTime = startTime;
+
+    timerIntervalRef.current = setInterval(() => {
+      const elapsed = Math.floor(performance.now() - startTime);
+      const formatted = elapsed.toString().padStart(4, '0');
+      setTimerValue(formatted);
+    }, 1); // Update every millisecond for smooth counting
+  }, []);
+
+  // Stop the timer
+  const stopTimer = useCallback(() => {
+    if (timerIntervalRef.current) {
+      clearInterval(timerIntervalRef.current);
+      timerIntervalRef.current = null;
+    }
+  }, []);
 
   // Handle valid response
   const handleValidResponse = useCallback(() => {
     if (trialState !== 'stimulus') return;
+
+    stopTimer();
 
     const now = performance.now();
     const rt = now - timingRef.current.stimulusOnsetTime;
@@ -54,9 +79,9 @@ export default function PVTTask({ block }) {
 
     // Show feedback
     setFeedback({
-      message: '✓ Réponse enregistrée',
+      message: 'Réponse enregistrée',
       rt: Math.round(rt),
-      color: 'text-green-600',
+      color: 'text-apple-blue',
     });
     setTrialState('feedback');
 
@@ -70,8 +95,8 @@ export default function PVTTask({ block }) {
         setTrialState('waiting');
         setFeedback(null);
       }
-    }, 1500);
-  }, [trialState, currentTrial, block, addTrialData]);
+    }, 1200);
+  }, [trialState, currentTrial, block, addTrialData, stopTimer]);
 
   // Anti-cheat system
   useEffect(() => {
@@ -93,11 +118,11 @@ export default function PVTTask({ block }) {
           e.stopImmediatePropagation();
           console.warn('⚠️ APPUI CONTINU BLOQUÉ');
 
-          // Show warning feedback
           if (trialState === 'stimulus') {
+            stopTimer();
             setFeedback({
-              message: '⚠️ Ne maintenez pas la touche enfoncée',
-              color: 'text-red-600',
+              message: 'Ne maintenez pas la touche enfoncée',
+              color: 'text-red-500',
             });
           }
           return false;
@@ -112,9 +137,10 @@ export default function PVTTask({ block }) {
           console.warn('⚠️ APPUI TROP RAPIDE BLOQUÉ');
 
           if (trialState === 'stimulus') {
+            stopTimer();
             setFeedback({
-              message: '⚠️ Appuis trop rapides détectés',
-              color: 'text-red-600',
+              message: 'Appuis trop rapides détectés',
+              color: 'text-red-500',
             });
           }
           return false;
@@ -128,8 +154,8 @@ export default function PVTTask({ block }) {
           console.warn('⚠️ ANTICIPATION BLOQUÉE');
 
           setFeedback({
-            message: '⚠️ Attendez que le nombre apparaisse !',
-            color: 'text-red-600',
+            message: 'Attendez que le timer apparaisse !',
+            color: 'text-red-500',
           });
 
           // Record as false start
@@ -188,14 +214,15 @@ export default function PVTTask({ block }) {
       document.removeEventListener('keydown', handleKeyDown, true);
       document.removeEventListener('keyup', handleKeyUp, true);
       document.removeEventListener('keypress', handleKeyPress, true);
+      stopTimer();
     };
-  }, [trialState, currentTrial, block, addTrialData, handleValidResponse]);
+  }, [trialState, currentTrial, block, addTrialData, handleValidResponse, stopTimer]);
 
   // Trial sequence
   useEffect(() => {
     if (trialState === 'waiting') {
       // Start new trial
-      setDisplayNumber('');
+      setTimerValue('0000');
       setFeedback(null);
       timingRef.current.trialStartTime = performance.now();
 
@@ -206,25 +233,25 @@ export default function PVTTask({ block }) {
 
       return () => clearTimeout(waitTimeout);
     } else if (trialState === 'fixation') {
-      // Show fixation cross for random delay
+      // Show fixation "0000" for random delay
       const delay = getRandomDelay();
       timingRef.current.currentDelay = delay;
+      setTimerValue('0000');
 
       const fixationTimeout = setTimeout(() => {
-        // Show stimulus
-        const randomNumber = Math.floor(100 + Math.random() * 900);
-        setDisplayNumber(randomNumber);
-        timingRef.current.stimulusOnsetTime = performance.now();
+        // Start timer
         setTrialState('stimulus');
+        startTimer();
       }, delay);
 
       return () => clearTimeout(fixationTimeout);
     } else if (trialState === 'stimulus') {
-      // Timeout after 5 seconds if no response
+      // Timeout after 10 seconds if no response
       const timeoutId = setTimeout(() => {
+        stopTimer();
         setFeedback({
           message: 'Trop lent !',
-          color: 'text-orange-600',
+          color: 'text-orange-500',
         });
 
         const trialData = {
@@ -249,11 +276,11 @@ export default function PVTTask({ block }) {
             setFeedback(null);
           }
         }, 1500);
-      }, 5000);
+      }, 10000);
 
       return () => clearTimeout(timeoutId);
     }
-  }, [trialState, currentTrial, block, addTrialData]);
+  }, [trialState, currentTrial, block, addTrialData, startTimer, stopTimer]);
 
   const handleNext = () => {
     if (block === 1) {
@@ -266,14 +293,14 @@ export default function PVTTask({ block }) {
   if (trialState === 'break' && isComplete) {
     return (
       <Layout>
-        <div className="card text-center space-y-8">
-          <h1 className="text-4xl font-bold gradient-text">
+        <div className="card max-w-xl mx-auto text-center space-y-6">
+          <h1 className="text-3xl font-semibold text-apple-gray-900">
             Bloc {block} terminé !
           </h1>
-          <p className="text-xl text-gray-700">
+          <p className="text-lg text-apple-gray-600">
             {block === 1 ? 'Prenez une courte pause avant de continuer.' : 'Excellent travail !'}
           </p>
-          <button onClick={handleNext} className="btn-primary text-xl">
+          <button onClick={handleNext} className="btn-primary btn-large mt-8">
             {block === 1 ? 'Commencer le Bloc 2' : 'Continuer'}
           </button>
         </div>
@@ -283,42 +310,38 @@ export default function PVTTask({ block }) {
 
   return (
     <Layout>
-      <div className="card min-h-[500px] flex flex-col justify-center items-center">
+      <div className="card min-h-[600px] flex flex-col justify-center items-center">
         <div className="text-center mb-8">
-          <p className="text-gray-500 text-sm">
-            Bloc {block} - Essai {currentTrial + 1} / {totalTrials}
+          <p className="text-sm text-apple-gray-400">
+            Bloc {block} • Essai {currentTrial + 1} / {totalTrials}
           </p>
         </div>
 
         <div className="flex-1 flex items-center justify-center w-full">
-          {trialState === 'fixation' && (
-            <div className="text-8xl text-gray-400 animate-pulse">
-              +
-            </div>
-          )}
-
-          {trialState === 'stimulus' && (
-            <div className="text-9xl font-bold gradient-text animate-pulse">
-              {displayNumber}
+          {(trialState === 'fixation' || trialState === 'stimulus') && (
+            <div className="timer-display">
+              {timerValue}
             </div>
           )}
 
           {trialState === 'feedback' && feedback && (
-            <div className="text-center space-y-4">
-              <p className={`text-3xl font-semibold ${feedback.color}`}>
+            <div className="text-center space-y-4 animate-scale-in">
+              <p className={`text-2xl font-medium ${feedback.color}`}>
                 {feedback.message}
               </p>
               {feedback.rt && (
-                <p className="text-6xl font-bold gradient-text">
-                  {feedback.rt} ms
+                <p className="text-5xl font-light text-apple-gray-900">
+                  {feedback.rt} <span className="text-2xl text-apple-gray-500">ms</span>
                 </p>
               )}
             </div>
           )}
         </div>
 
-        <div className="mt-8 text-center text-sm text-gray-500">
-          <p>Appuyez sur ESPACE dès que le nombre apparaît</p>
+        <div className="mt-8 text-center">
+          <p className="text-sm text-apple-gray-500">
+            Appuyez sur <kbd className="px-3 py-1.5 bg-white border border-apple-gray-300 rounded-lg text-apple-gray-700 font-mono text-xs shadow-soft">ESPACE</kbd> dès que le timer démarre
+          </p>
         </div>
       </div>
     </Layout>

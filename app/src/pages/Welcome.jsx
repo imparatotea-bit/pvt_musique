@@ -35,12 +35,12 @@ export default function Welcome() {
 
   return (
     <Layout>
-      <div className="card text-center space-y-8 animate-fade-in">
-        <h1 className="text-6xl font-bold gradient-text mb-4">
+      <div className="card max-w-2xl mx-auto text-center space-y-8 animate-fade-in">
+        <h1 className="text-6xl font-semibold text-apple-gray-900 mb-10 tracking-tight">
           Bienvenue
         </h1>
 
-        <div className="space-y-4 text-lg text-gray-700">
+        <div className="space-y-4 text-lg text-apple-gray-700">
           <p>
             Merci de participer à cette étude sur l'attention et la musique.
           </p>
@@ -55,7 +55,7 @@ export default function Welcome() {
         <div className="pt-8">
           <button
             onClick={handleStart}
-            className="btn-primary text-xl"
+            className="btn-primary btn-large text-xl"
           >
             Commencer l'expérience
           </button>

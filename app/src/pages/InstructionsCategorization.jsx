@@ -6,12 +6,12 @@ export default function InstructionsCategorization() {
 
   return (
     <Layout>
-      <div className="card space-y-6">
-        <h1 className="text-4xl font-bold gradient-text text-center mb-8">
+      <div className="card max-w-2xl mx-auto animate-fade-in space-y-6">
+        <h1 className="text-4xl font-semibold text-apple-gray-900 text-center mb-10 tracking-tight">
           Instructions - Catégorisation d'images
         </h1>
 
-        <div className="space-y-4 text-lg text-gray-700">
+        <div className="space-y-4 text-lg text-apple-gray-700">
           <p>
             Dans cette tâche, vous allez voir des images apparaître à l'écran.
           </p>
@@ -54,7 +54,7 @@ export default function InstructionsCategorization() {
         <div className="pt-6 flex justify-center">
           <button
             onClick={() => navigate('/categorization-1')}
-            className="btn-primary text-xl"
+            className="btn-primary btn-large text-xl"
           >
             Commencer la Série 1
           </button>

@@ -35,14 +35,14 @@ export default function PostExperiment() {
 
   return (
     <Layout>
-      <div className="card">
-        <h1 className="text-4xl font-bold gradient-text mb-8 text-center">
+      <div className="card max-w-2xl mx-auto animate-fade-in">
+        <h1 className="text-4xl font-semibold text-apple-gray-900 mb-10 text-center tracking-tight">
           Questionnaire final
         </h1>
 
         <form onSubmit={handleSubmit} className="space-y-8">
           <div>
-            <label className="block text-lg font-medium text-gray-700 mb-3">
+            <label className="label-apple">
               Comment avez-vous trouvé la difficulté des tâches ?
             </label>
             <select
@@ -50,9 +50,9 @@ export default function PostExperiment() {
               value={formData.difficulty}
               onChange={handleChange}
               required
-              className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-notion-purple focus:outline-none transition-colors text-lg"
+              className="select-apple"
             >
-              <option value="">-- Choisir --</option>
+              <option value="">Sélectionnez...</option>
               <option value="very_easy">Très facile</option>
               <option value="easy">Facile</option>
               <option value="moderate">Modéré</option>
@@ -63,7 +63,7 @@ export default function PostExperiment() {
 
           {condition === 'music' && (
             <div>
-              <label className="block text-lg font-medium text-gray-700 mb-3">
+              <label className="label-apple">
                 Selon vous, la musique a-t-elle influencé vos performances ?
               </label>
               <select
@@ -71,9 +71,9 @@ export default function PostExperiment() {
                 value={formData.musicImpact}
                 onChange={handleChange}
                 required
-                className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-notion-purple focus:outline-none transition-colors text-lg"
+                className="select-apple"
               >
-                <option value="">-- Choisir --</option>
+                <option value="">Sélectionnez...</option>
                 <option value="positive">Oui, positivement</option>
                 <option value="negative">Oui, négativement</option>
                 <option value="no_impact">Non, aucun impact</option>
@@ -83,7 +83,7 @@ export default function PostExperiment() {
           )}
 
           <div>
-            <label className="block text-lg font-medium text-gray-700 mb-3">
+            <label className="label-apple">
               Commentaires ou observations (optionnel)
             </label>
             <textarea
@@ -91,16 +91,16 @@ export default function PostExperiment() {
               value={formData.comments}
               onChange={handleChange}
               rows={4}
-              className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-notion-purple focus:outline-none transition-colors text-lg resize-none"
+              className="input-apple resize-none"
               placeholder="Partagez vos impressions sur l'expérience..."
             />
           </div>
 
-          <div className="pt-4 flex justify-center">
+          <div className="pt-6 flex justify-center">
             <button
               type="submit"
               disabled={!isValid}
-              className={`btn-primary text-xl ${!isValid ? 'opacity-50 cursor-not-allowed' : ''}`}
+              className={`btn-primary btn-large ${!isValid ? 'opacity-40 cursor-not-allowed' : ''}`}
             >
               Terminer l'expérience
             </button>

@@ -46,69 +46,7 @@ export const ExperimentProvider = ({ children }) => {
       ...data,
     };
 
-    // Convert to CSV
-    const csvRows = [];
-
-    // Header row
-    csvRows.push([
-      'participantId',
-      'condition',
-      'timestamp',
-      'section',
-      'trial',
-      'stimulus',
-      'response',
-      'correct',
-      'rt',
-      'data'
-    ].join(','));
-
-    // PVT trials
-    ['pvtBlock1', 'pvtBlock2'].forEach(block => {
-      data[block].forEach((trial, idx) => {
-        csvRows.push([
-          participantId,
-          condition,
-          trial.timestamp,
-          block,
-          idx + 1,
-          trial.delay || '',
-          trial.response || '',
-          trial.valid ? 'true' : 'false',
-          trial.rt || '',
-          JSON.stringify(trial).replace(/,/g, ';')
-        ].join(','));
-      });
-    });
-
-    // Categorization trials
-    ['categorization1', 'categorization2'].forEach(block => {
-      data[block].forEach((trial, idx) => {
-        csvRows.push([
-          participantId,
-          condition,
-          trial.timestamp,
-          block,
-          idx + 1,
-          trial.image || '',
-          trial.response || '',
-          trial.correct ? 'true' : 'false',
-          trial.rt || '',
-          JSON.stringify(trial).replace(/,/g, ';')
-        ].join(','));
-      });
-    });
-
-    const csvContent = csvRows.join('\n');
-
-    // Download
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `pvt_music_${participantId}_${Date.now()}.csv`;
-    link.click();
-
-    // Also send to server
+    // Send to server only (no local CSV download)
     return fetch('/api/save-data', {
       method: 'POST',
       headers: {

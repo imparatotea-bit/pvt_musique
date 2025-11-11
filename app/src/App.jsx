@@ -20,7 +20,7 @@ function App() {
     <ExperimentProvider>
       <AudioProvider>
         <BrowserRouter>
-          <div className="min-h-screen bg-gradient-to-br from-notion-purple-bg via-white to-notion-blue-bg">
+          <div className="min-h-screen bg-apple-gray-50">
             <Routes>
               <Route path="/" element={<Welcome />} />
               <Route path="/start-music" element={<StartMusic />} />

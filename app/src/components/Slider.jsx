@@ -19,27 +19,27 @@ export default function Slider({
   };
 
   return (
-    <div className="space-y-4">
-      <label className="block text-lg font-medium text-gray-700">
+    <div className="space-y-5">
+      <label className="label-apple">
         {label}
       </label>
-      <div className="space-y-3">
+      <div className="space-y-6">
         <input
           type="range"
           min={min}
           max={max}
           value={value}
           onChange={handleChange}
-          className="slider-custom w-full"
+          className="slider-apple"
         />
         {showValue && (
           <div className="flex justify-center">
-            <div className="text-6xl font-bold gradient-text animate-pulse-slow">
+            <div className="text-7xl font-light text-apple-blue tabular-nums">
               {value}
             </div>
           </div>
         )}
-        <div className="flex justify-between text-sm text-gray-500">
+        <div className="flex justify-between text-xs text-apple-gray-400 font-medium">
           <span>{min}</span>
           <span>{max}</span>
         </div>

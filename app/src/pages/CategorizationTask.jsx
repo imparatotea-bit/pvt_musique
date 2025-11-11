@@ -5,16 +5,16 @@ import Layout from '../components/Layout';
 
 // Sample images - in production, these would be real image URLs
 const imageStimuli = [
-  { id: 1, name: 'tree.jpg', category: 'natural', correctResponse: 'f' },
-  { id: 2, name: 'car.jpg', category: 'artificial', correctResponse: 'j' },
-  { id: 3, name: 'flower.jpg', category: 'natural', correctResponse: 'f' },
-  { id: 4, name: 'building.jpg', category: 'artificial', correctResponse: 'j' },
-  { id: 5, name: 'bird.jpg', category: 'natural', correctResponse: 'f' },
-  { id: 6, name: 'computer.jpg', category: 'artificial', correctResponse: 'j' },
-  { id: 7, name: 'mountain.jpg', category: 'natural', correctResponse: 'f' },
-  { id: 8, name: 'phone.jpg', category: 'artificial', correctResponse: 'j' },
-  { id: 9, name: 'cat.jpg', category: 'natural', correctResponse: 'f' },
-  { id: 10, name: 'chair.jpg', category: 'artificial', correctResponse: 'j' },
+  { id: 1, name: 'tree.jpg', category: 'natural', correctResponse: 'natural' },
+  { id: 2, name: 'car.jpg', category: 'artificial', correctResponse: 'artificial' },
+  { id: 3, name: 'flower.jpg', category: 'natural', correctResponse: 'natural' },
+  { id: 4, name: 'building.jpg', category: 'artificial', correctResponse: 'artificial' },
+  { id: 5, name: 'bird.jpg', category: 'natural', correctResponse: 'natural' },
+  { id: 6, name: 'computer.jpg', category: 'artificial', correctResponse: 'artificial' },
+  { id: 7, name: 'mountain.jpg', category: 'natural', correctResponse: 'natural' },
+  { id: 8, name: 'phone.jpg', category: 'artificial', correctResponse: 'artificial' },
+  { id: 9, name: 'cat.jpg', category: 'natural', correctResponse: 'natural' },
+  { id: 10, name: 'chair.jpg', category: 'artificial', correctResponse: 'artificial' },
 ];
 
 export default function CategorizationTask({ series }) {
@@ -26,6 +26,7 @@ export default function CategorizationTask({ series }) {
   const [showFeedback, setShowFeedback] = useState(false);
   const [feedbackData, setFeedbackData] = useState(null);
   const [isComplete, setIsComplete] = useState(false);
+  const [buttonsDisabled, setButtonsDisabled] = useState(false);
 
   // Shuffle images for this series
   const [stimuli] = useState(() => {
@@ -44,6 +45,7 @@ export default function CategorizationTask({ series }) {
       const timeout = setTimeout(() => {
         setCurrentImage(stimuli[currentTrial]);
         setTrialStartTime(performance.now());
+        setButtonsDisabled(false);
       }, 500);
 
       return () => clearTimeout(timeout);
@@ -52,19 +54,21 @@ export default function CategorizationTask({ series }) {
     }
   }, [currentTrial, stimuli, showFeedback, isComplete]);
 
-  // Handle response
-  const handleResponse = useCallback((key) => {
-    if (!currentImage || showFeedback || isComplete) return;
+  // Handle response via button click
+  const handleResponse = useCallback((response) => {
+    if (!currentImage || showFeedback || isComplete || buttonsDisabled) return;
+
+    setButtonsDisabled(true);
 
     const rt = performance.now() - trialStartTime;
-    const isCorrect = key === currentImage.correctResponse;
+    const isCorrect = response === currentImage.correctResponse;
 
     // Record trial data
     const trialData = {
       trial: currentTrial + 1,
       image: currentImage.name,
       category: currentImage.category,
-      response: key,
+      response: response,
       correct: isCorrect,
       rt: Math.round(rt),
       timestamp: new Date().toISOString(),
@@ -86,20 +90,7 @@ export default function CategorizationTask({ series }) {
       setCurrentImage(null);
       setCurrentTrial(prev => prev + 1);
     }, 800);
-  }, [currentImage, currentTrial, showFeedback, isComplete, trialStartTime, series, addTrialData]);
-
-  // Keyboard handler
-  useEffect(() => {
-    const handleKeyPress = (e) => {
-      const key = e.key.toLowerCase();
-      if (key === 'f' || key === 'j') {
-        handleResponse(key);
-      }
-    };
-
-    window.addEventListener('keypress', handleKeyPress);
-    return () => window.removeEventListener('keypress', handleKeyPress);
-  }, [handleResponse]);
+  }, [currentImage, currentTrial, showFeedback, isComplete, trialStartTime, series, addTrialData, buttonsDisabled]);
 
   const handleNext = () => {
     if (series === 1) {
@@ -112,14 +103,14 @@ export default function CategorizationTask({ series }) {
   if (isComplete) {
     return (
       <Layout>
-        <div className="card text-center space-y-8">
-          <h1 className="text-4xl font-bold gradient-text">
+        <div className="card max-w-xl mx-auto text-center space-y-6">
+          <h1 className="text-3xl font-semibold text-apple-gray-900">
             Série {series} terminée !
           </h1>
-          <p className="text-xl text-gray-700">
+          <p className="text-lg text-apple-gray-600">
             {series === 1 ? 'Passons à la série suivante.' : 'Excellent travail !'}
           </p>
-          <button onClick={handleNext} className="btn-primary text-xl">
+          <button onClick={handleNext} className="btn-primary btn-large mt-8">
             Continuer
           </button>
         </div>
@@ -131,56 +122,68 @@ export default function CategorizationTask({ series }) {
     <Layout>
       <div className="card min-h-[600px] flex flex-col">
         <div className="text-center mb-8">
-          <p className="text-gray-500 text-sm">
-            Série {series} - Image {currentTrial + 1} / {stimuli.length}
+          <p className="text-sm text-apple-gray-400">
+            Série {series} • Image {currentTrial + 1} / {stimuli.length}
           </p>
         </div>
 
         <div className="flex-1 flex items-center justify-center">
           {currentImage && !showFeedback && (
-            <div className="text-center space-y-8">
+            <div className="text-center space-y-12 animate-scale-in">
               {/* Placeholder for image - in production would be <img src={...} /> */}
-              <div className="w-96 h-96 bg-gradient-to-br from-notion-purple-light to-notion-blue-light rounded-3xl flex items-center justify-center border-4 border-white shadow-2xl">
+              <div className="w-80 h-80 bg-apple-gray-100 rounded-3xl flex items-center justify-center shadow-soft-lg">
                 <div className="text-center">
-                  <p className="text-2xl font-bold text-gray-700 mb-2">
+                  <p className="text-6xl mb-4">
                     {currentImage.category === 'natural' ? '🌿' : '🏭'}
                   </p>
-                  <p className="text-lg text-gray-600">
+                  <p className="text-base text-apple-gray-600">
                     {currentImage.name}
                   </p>
-                  <p className="text-sm text-gray-500 mt-4">
+                  <p className="text-xs text-apple-gray-400 mt-2">
                     (Image placeholder)
                   </p>
                 </div>
+              </div>
+
+              {/* Boutons de réponse */}
+              <div className="flex justify-center gap-6">
+                <button
+                  onClick={() => handleResponse('natural')}
+                  disabled={buttonsDisabled}
+                  className="px-10 py-5 bg-white border-2 border-apple-gray-200 rounded-2xl
+                             hover:border-apple-blue hover:bg-apple-blue hover:text-white
+                             transition-all duration-200 shadow-soft hover:shadow-soft-lg
+                             disabled:opacity-50 disabled:cursor-not-allowed
+                             text-lg font-medium text-apple-gray-900"
+                >
+                  🌿 Naturel
+                </button>
+
+                <button
+                  onClick={() => handleResponse('artificial')}
+                  disabled={buttonsDisabled}
+                  className="px-10 py-5 bg-white border-2 border-apple-gray-200 rounded-2xl
+                             hover:border-apple-purple hover:bg-apple-purple hover:text-white
+                             transition-all duration-200 shadow-soft hover:shadow-soft-lg
+                             disabled:opacity-50 disabled:cursor-not-allowed
+                             text-lg font-medium text-apple-gray-900"
+                >
+                  🏭 Artificiel
+                </button>
               </div>
             </div>
           )}
 
           {showFeedback && feedbackData && (
-            <div className="text-center space-y-4">
-              <div className={`text-6xl ${feedbackData.isCorrect ? 'text-green-600' : 'text-red-600'}`}>
+            <div className="text-center space-y-6 animate-scale-in">
+              <div className={`text-7xl ${feedbackData.isCorrect ? 'text-green-500' : 'text-red-500'}`}>
                 {feedbackData.isCorrect ? '✓' : '✗'}
               </div>
-              <p className="text-2xl font-semibold text-gray-700">
-                {feedbackData.rt} ms
+              <p className="text-4xl font-light text-apple-gray-900">
+                {feedbackData.rt} <span className="text-xl text-apple-gray-500">ms</span>
               </p>
             </div>
           )}
-        </div>
-
-        <div className="mt-8 flex justify-center gap-8 text-lg">
-          <div className="text-center">
-            <kbd className="px-6 py-3 bg-white rounded-xl font-mono text-notion-blue border-3 border-notion-blue shadow-lg text-2xl">
-              F
-            </kbd>
-            <p className="mt-2 text-gray-600">Naturel</p>
-          </div>
-          <div className="text-center">
-            <kbd className="px-6 py-3 bg-white rounded-xl font-mono text-notion-pink border-3 border-notion-pink shadow-lg text-2xl">
-              J
-            </kbd>
-            <p className="mt-2 text-gray-600">Artificiel</p>
-          </div>
         </div>
       </div>
     </Layout>

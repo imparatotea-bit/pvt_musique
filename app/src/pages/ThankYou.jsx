@@ -12,7 +12,7 @@ export default function ThankYou() {
     const code = `PVT-${participantId || Date.now()}-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
     setCompletionCode(code);
 
-    // Export data
+    // Export data to server only
     exportData()
       .then(() => {
         setExportStatus('success');
@@ -23,45 +23,48 @@ export default function ThankYou() {
       });
   }, [participantId, exportData]);
 
-  const handleDownloadBackup = () => {
-    // Trigger CSV download as backup
-    exportData();
-  };
-
   return (
     <Layout>
-      <div className="card text-center space-y-8">
-        <div className="text-8xl mb-4">
+      <div className="card max-w-2xl mx-auto text-center space-y-10 animate-fade-in">
+        <div className="text-7xl">
           🎉
         </div>
 
-        <h1 className="text-5xl font-bold gradient-text">
+        <h1 className="text-4xl font-semibold text-apple-gray-900">
           Merci d'avoir participé !
         </h1>
 
-        <div className="space-y-4 text-lg text-gray-700">
+        <div className="space-y-3 text-lg text-apple-gray-600">
           <p>
             Votre contribution est précieuse pour notre recherche.
           </p>
           <p>
-            Vos données ont été enregistrées avec succès.
+            Vos données ont été enregistrées sur le serveur.
           </p>
         </div>
 
-        <div className="bg-notion-purple-bg p-8 rounded-2xl border-2 border-notion-purple-light">
-          <p className="text-sm text-gray-600 mb-2">
-            Votre code de complétion :
+        <div className="bg-apple-blue/5 p-10 rounded-3xl border border-apple-blue/20">
+          <p className="text-sm text-apple-gray-500 mb-3 font-medium uppercase tracking-wide">
+            Votre code de complétion
           </p>
-          <p className="text-3xl font-bold text-notion-purple font-mono tracking-wider">
+          <p className="text-4xl font-mono font-semibold text-apple-blue tracking-wider">
             {completionCode}
           </p>
-          <p className="text-sm text-gray-600 mt-4">
+          <p className="text-sm text-apple-gray-500 mt-4">
             Notez ce code pour validation
           </p>
         </div>
 
+        {exportStatus === 'pending' && (
+          <div className="bg-apple-gray-100 p-5 rounded-2xl">
+            <p className="text-apple-gray-600 font-medium">
+              ⏳ Envoi des données en cours...
+            </p>
+          </div>
+        )}
+
         {exportStatus === 'success' && (
-          <div className="bg-green-50 p-4 rounded-xl border-2 border-green-200">
+          <div className="bg-green-50 p-5 rounded-2xl border border-green-200">
             <p className="text-green-700 font-medium">
               ✓ Données enregistrées avec succès
             </p>
@@ -69,20 +72,17 @@ export default function ThankYou() {
         )}
 
         {exportStatus === 'error' && (
-          <div className="bg-orange-50 p-4 rounded-xl border-2 border-orange-200 space-y-3">
-            <p className="text-orange-700 font-medium">
+          <div className="bg-red-50 p-5 rounded-2xl border border-red-200">
+            <p className="text-red-700 font-medium">
               ⚠️ Erreur lors de l'envoi au serveur
             </p>
-            <button
-              onClick={handleDownloadBackup}
-              className="btn-secondary"
-            >
-              Télécharger une copie de sauvegarde
-            </button>
+            <p className="text-sm text-red-600 mt-2">
+              Veuillez contacter l'expérimentateur avec votre code de complétion.
+            </p>
           </div>
         )}
 
-        <div className="pt-8 text-gray-500 text-sm">
+        <div className="pt-8 text-apple-gray-400 text-sm">
           <p>Vous pouvez maintenant fermer cette fenêtre.</p>
         </div>
       </div>

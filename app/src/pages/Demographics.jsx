@@ -28,14 +28,14 @@ export default function Demographics() {
 
   return (
     <Layout>
-      <div className="card">
-        <h1 className="text-4xl font-bold gradient-text mb-8 text-center">
+      <div className="card max-w-2xl mx-auto">
+        <h1 className="text-4xl font-semibold text-apple-gray-900 mb-10 text-center tracking-tight">
           Informations démographiques
         </h1>
 
         <form onSubmit={handleSubmit} className="space-y-8">
           <div>
-            <label className="block text-lg font-medium text-gray-700 mb-3">
+            <label className="label-apple">
               Âge
             </label>
             <input
@@ -46,13 +46,13 @@ export default function Demographics() {
               min="18"
               max="100"
               required
-              className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-notion-purple focus:outline-none transition-colors text-lg"
+              className="input-apple"
               placeholder="Votre âge"
             />
           </div>
 
           <div>
-            <label className="block text-lg font-medium text-gray-700 mb-3">
+            <label className="label-apple">
               Genre
             </label>
             <select
@@ -60,9 +60,9 @@ export default function Demographics() {
               value={formData.gender}
               onChange={handleChange}
               required
-              className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-notion-purple focus:outline-none transition-colors text-lg"
+              className="select-apple"
             >
-              <option value="">-- Choisir --</option>
+              <option value="">Sélectionnez...</option>
               <option value="male">Homme</option>
               <option value="female">Femme</option>
               <option value="other">Autre</option>
@@ -70,11 +70,11 @@ export default function Demographics() {
             </select>
           </div>
 
-          <div className="pt-4 flex justify-center">
+          <div className="pt-6 flex justify-center">
             <button
               type="submit"
               disabled={!isValid}
-              className={`btn-primary text-xl ${!isValid ? 'opacity-50 cursor-not-allowed' : ''}`}
+              className={`btn-primary btn-large ${!isValid ? 'opacity-40 cursor-not-allowed' : ''}`}
             >
               Continuer
             </button>
