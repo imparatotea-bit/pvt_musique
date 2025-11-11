@@ -700,34 +700,87 @@ this.state.running = false;
 // Enregistrer les données
 this.data.rt = this.data.duration;
 
-if (this.data.ended_on === 'timeout') {
+// Vérifier si c'est un appui continu
+if (this.state.continuousPress) {
+  this.data.response_type = 'continuous_press';
+  this.data.valid_response = false;
+  console.log('⚠️ Réponse invalide : appui continu ou trop rapide');
+} else if (this.data.ended_on === 'timeout') {
   this.data.response_type = 'no_response';
+  this.data.valid_response = false;
 } else if (this.data.rt < 100) {
   this.data.response_type = 'anticipation';
+  this.data.valid_response = false;
 } else if (this.data.rt > 500) {
   this.data.response_type = 'lapse';
+  this.data.valid_response = true; // Les lapses sont valides mais lents
 } else {
   this.data.response_type = 'normal';
+  this.data.valid_response = true;
 }
 },
                   "run": function anonymous() {
 // Démarrer le compteur
 this.state.startTime = performance.now();
 this.state.running = true;
+this.state.spaceKeyDown = false; // Tracker si la touche est enfoncée
+this.state.continuousPress = false; // Flag pour appui continu
+this.state.lastResponseTime = 0; // Dernier temps de réponse
 
 const self = this;
 
+// Détecter les appuis continus sur la barre espace
+const handleKeyDown = function(e) {
+  if (e.code === 'Space' || e.key === ' ') {
+    if (self.state.spaceKeyDown) {
+      // La touche est déjà enfoncée = appui continu détecté
+      e.preventDefault();
+      self.state.continuousPress = true;
+      console.warn('⚠️ Appui continu détecté - réponse ignorée');
+      return;
+    }
+
+    // Vérifier le délai minimum entre deux appuis (100ms)
+    const now = performance.now();
+    if (self.state.lastResponseTime > 0 && (now - self.state.lastResponseTime) < 100) {
+      e.preventDefault();
+      self.state.continuousPress = true;
+      console.warn('⚠️ Appui trop rapide détecté - réponse ignorée');
+      return;
+    }
+
+    self.state.spaceKeyDown = true;
+    self.state.lastResponseTime = now;
+  }
+};
+
+const handleKeyUp = function(e) {
+  if (e.code === 'Space' || e.key === ' ') {
+    self.state.spaceKeyDown = false;
+  }
+};
+
+// Ajouter les listeners
+document.addEventListener('keydown', handleKeyDown);
+document.addEventListener('keyup', handleKeyUp);
+
+// Nettoyer à la fin
+this.on('end', function() {
+  document.removeEventListener('keydown', handleKeyDown);
+  document.removeEventListener('keyup', handleKeyUp);
+});
+
 function updateCounter() {
   if (!self.state.running) return;
-  
+
   const elapsed = Math.floor(performance.now() - self.state.startTime);
   const display = String(elapsed).padStart(4, '0');
-  
+
   const element = document.getElementById('counter');
   if (element) {
     element.textContent = display;
   }
-  
+
   requestAnimationFrame(updateCounter);
 }
 
@@ -1243,34 +1296,87 @@ this.state.running = false;
 // Enregistrer les données
 this.data.rt = this.data.duration;
 
-if (this.data.ended_on === 'timeout') {
+// Vérifier si c'est un appui continu
+if (this.state.continuousPress) {
+  this.data.response_type = 'continuous_press';
+  this.data.valid_response = false;
+  console.log('⚠️ Réponse invalide : appui continu ou trop rapide');
+} else if (this.data.ended_on === 'timeout') {
   this.data.response_type = 'no_response';
+  this.data.valid_response = false;
 } else if (this.data.rt < 100) {
   this.data.response_type = 'anticipation';
+  this.data.valid_response = false;
 } else if (this.data.rt > 500) {
   this.data.response_type = 'lapse';
+  this.data.valid_response = true; // Les lapses sont valides mais lents
 } else {
   this.data.response_type = 'normal';
+  this.data.valid_response = true;
 }
 },
                   "run": function anonymous() {
 // Démarrer le compteur
 this.state.startTime = performance.now();
 this.state.running = true;
+this.state.spaceKeyDown = false; // Tracker si la touche est enfoncée
+this.state.continuousPress = false; // Flag pour appui continu
+this.state.lastResponseTime = 0; // Dernier temps de réponse
 
 const self = this;
 
+// Détecter les appuis continus sur la barre espace
+const handleKeyDown = function(e) {
+  if (e.code === 'Space' || e.key === ' ') {
+    if (self.state.spaceKeyDown) {
+      // La touche est déjà enfoncée = appui continu détecté
+      e.preventDefault();
+      self.state.continuousPress = true;
+      console.warn('⚠️ Appui continu détecté - réponse ignorée');
+      return;
+    }
+
+    // Vérifier le délai minimum entre deux appuis (100ms)
+    const now = performance.now();
+    if (self.state.lastResponseTime > 0 && (now - self.state.lastResponseTime) < 100) {
+      e.preventDefault();
+      self.state.continuousPress = true;
+      console.warn('⚠️ Appui trop rapide détecté - réponse ignorée');
+      return;
+    }
+
+    self.state.spaceKeyDown = true;
+    self.state.lastResponseTime = now;
+  }
+};
+
+const handleKeyUp = function(e) {
+  if (e.code === 'Space' || e.key === ' ') {
+    self.state.spaceKeyDown = false;
+  }
+};
+
+// Ajouter les listeners
+document.addEventListener('keydown', handleKeyDown);
+document.addEventListener('keyup', handleKeyUp);
+
+// Nettoyer à la fin
+this.on('end', function() {
+  document.removeEventListener('keydown', handleKeyDown);
+  document.removeEventListener('keyup', handleKeyUp);
+});
+
 function updateCounter() {
   if (!self.state.running) return;
-  
+
   const elapsed = Math.floor(performance.now() - self.state.startTime);
   const display = String(elapsed).padStart(4, '0');
-  
+
   const element = document.getElementById('counter');
   if (element) {
     element.textContent = display;
   }
-  
+
   requestAnimationFrame(updateCounter);
 }
 
