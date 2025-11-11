@@ -1,0 +1,12 @@
+{
+  "name": "pvt_musique_habitudes",
+  "version": "1.0.0",
+  "description": "Expérience PVT - Effet de la musique sur la vigilance",
+  "scripts": {
+    "start": "npx http-server -p 8000 -o",
+    "dev": "npx http-server -p 8000 -o"
+  },
+  "keywords": ["lab.js", "pvt", "psychologie", "expérience"],
+  "author": "",
+  "license": "MIT"
+}
