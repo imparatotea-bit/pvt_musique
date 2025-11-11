@@ -752,61 +752,77 @@ if (this.data.ended_on === 'timeout') {
 this.state.startTime = performance.now();
 this.state.running = true;
 this.state.spaceKeyDown = false; // Tracker si la touche est enfoncée
+this.state.keyDownTime = 0; // Moment où keydown a été détecté
 this.state.hasHadFirstPress = false; // A-t-on eu au moins un appui valide
 this.state.lastResponseTime = 0; // Dernier temps de réponse
 
 const self = this;
 
-// Détecter les appuis continus sur la barre espace
+// === SYSTÈME ANTI-TRICHE ROBUSTE ===
+// Détecter si la touche est maintenue
 const handleKeyDown = function(e) {
-  if (e.code === 'Space' || e.key === ' ') {
-    self.state.spaceKeyDown = true;
+  if (e.code === 'Space' || e.key === ' ' || e.keyCode === 32) {
+    const now = performance.now();
+
+    // Si c'est le premier keydown, enregistrer
+    if (!self.state.spaceKeyDown) {
+      self.state.spaceKeyDown = true;
+      self.state.keyDownTime = now;
+    }
+
+    // BLOQUER si touche déjà enfoncée (appui continu)
+    if (self.state.hasHadFirstPress && (now - self.state.keyDownTime) > 50) {
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+      console.warn('⚠️ APPUI CONTINU BLOQUÉ (touche maintenue)');
+      return false;
+    }
+
+    // BLOQUER si appui trop rapide (< 150ms depuis dernier)
+    if (self.state.lastResponseTime > 0 && (now - self.state.lastResponseTime) < 150) {
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+      console.warn('⚠️ APPUI TROP RAPIDE BLOQUÉ (<150ms)');
+      return false;
+    }
   }
 };
 
 const handleKeyUp = function(e) {
-  if (e.code === 'Space' || e.key === ' ') {
+  if (e.code === 'Space' || e.key === ' ' || e.keyCode === 32) {
     self.state.spaceKeyDown = false;
+    self.state.keyDownTime = 0;
   }
 };
 
-// Intercepter AVANT lab.js pour bloquer les appuis invalides
+// Intercepter aussi keypress pour double sécurité
 const handleKeyPress = function(e) {
   if (e.code === 'Space' || e.key === ' ' || e.keyCode === 32) {
     const now = performance.now();
 
-    // Vérifier si la touche est déjà enfoncée (appui continu)
-    if (self.state.spaceKeyDown && self.state.hasHadFirstPress) {
-      e.preventDefault();
-      e.stopImmediatePropagation();
-      console.warn('⚠️ Appui continu détecté (touche maintenue) - BLOQUÉ');
-      return false;
+    // Valider l'appui seulement si tout est OK
+    if (self.state.spaceKeyDown &&
+        (!self.state.hasHadFirstPress ||
+         (now - self.state.lastResponseTime) >= 150)) {
+      // Appui valide
+      self.state.lastResponseTime = now;
+      self.state.hasHadFirstPress = true;
+      console.log('✓ Appui valide (TR:', Math.round(now - self.state.startTime), 'ms)');
     }
-
-    // Vérifier le délai minimum entre deux appuis (150ms)
-    if (self.state.lastResponseTime > 0 && (now - self.state.lastResponseTime) < 150) {
-      e.preventDefault();
-      e.stopImmediatePropagation();
-      console.warn('⚠️ Appui trop rapide (<150ms) - BLOQUÉ');
-      return false;
-    }
-
-    // Appui valide : enregistrer le timestamp et marquer qu'on a eu un appui
-    self.state.lastResponseTime = now;
-    self.state.hasHadFirstPress = true;
-    console.log('✓ Appui valide détecté (TR:', Math.round(now - self.state.startTime), 'ms)');
   }
 };
 
-// Ajouter les listeners (keypress avec capture=true pour être AVANT lab.js)
-document.addEventListener('keydown', handleKeyDown);
-document.addEventListener('keyup', handleKeyUp);
+// Ajouter les listeners avec capture=true (AVANT lab.js)
+document.addEventListener('keydown', handleKeyDown, true);
+document.addEventListener('keyup', handleKeyUp, true);
 document.addEventListener('keypress', handleKeyPress, true);
 
 // Nettoyer à la fin
 this.on('end', function() {
-  document.removeEventListener('keydown', handleKeyDown);
-  document.removeEventListener('keyup', handleKeyUp);
+  document.removeEventListener('keydown', handleKeyDown, true);
+  document.removeEventListener('keyup', handleKeyUp, true);
   document.removeEventListener('keypress', handleKeyPress, true);
 });
 
@@ -1352,61 +1368,77 @@ if (this.data.ended_on === 'timeout') {
 this.state.startTime = performance.now();
 this.state.running = true;
 this.state.spaceKeyDown = false; // Tracker si la touche est enfoncée
+this.state.keyDownTime = 0; // Moment où keydown a été détecté
 this.state.hasHadFirstPress = false; // A-t-on eu au moins un appui valide
 this.state.lastResponseTime = 0; // Dernier temps de réponse
 
 const self = this;
 
-// Détecter les appuis continus sur la barre espace
+// === SYSTÈME ANTI-TRICHE ROBUSTE ===
+// Détecter si la touche est maintenue
 const handleKeyDown = function(e) {
-  if (e.code === 'Space' || e.key === ' ') {
-    self.state.spaceKeyDown = true;
+  if (e.code === 'Space' || e.key === ' ' || e.keyCode === 32) {
+    const now = performance.now();
+
+    // Si c'est le premier keydown, enregistrer
+    if (!self.state.spaceKeyDown) {
+      self.state.spaceKeyDown = true;
+      self.state.keyDownTime = now;
+    }
+
+    // BLOQUER si touche déjà enfoncée (appui continu)
+    if (self.state.hasHadFirstPress && (now - self.state.keyDownTime) > 50) {
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+      console.warn('⚠️ APPUI CONTINU BLOQUÉ (touche maintenue)');
+      return false;
+    }
+
+    // BLOQUER si appui trop rapide (< 150ms depuis dernier)
+    if (self.state.lastResponseTime > 0 && (now - self.state.lastResponseTime) < 150) {
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+      console.warn('⚠️ APPUI TROP RAPIDE BLOQUÉ (<150ms)');
+      return false;
+    }
   }
 };
 
 const handleKeyUp = function(e) {
-  if (e.code === 'Space' || e.key === ' ') {
+  if (e.code === 'Space' || e.key === ' ' || e.keyCode === 32) {
     self.state.spaceKeyDown = false;
+    self.state.keyDownTime = 0;
   }
 };
 
-// Intercepter AVANT lab.js pour bloquer les appuis invalides
+// Intercepter aussi keypress pour double sécurité
 const handleKeyPress = function(e) {
   if (e.code === 'Space' || e.key === ' ' || e.keyCode === 32) {
     const now = performance.now();
 
-    // Vérifier si la touche est déjà enfoncée (appui continu)
-    if (self.state.spaceKeyDown && self.state.hasHadFirstPress) {
-      e.preventDefault();
-      e.stopImmediatePropagation();
-      console.warn('⚠️ Appui continu détecté (touche maintenue) - BLOQUÉ');
-      return false;
+    // Valider l'appui seulement si tout est OK
+    if (self.state.spaceKeyDown &&
+        (!self.state.hasHadFirstPress ||
+         (now - self.state.lastResponseTime) >= 150)) {
+      // Appui valide
+      self.state.lastResponseTime = now;
+      self.state.hasHadFirstPress = true;
+      console.log('✓ Appui valide (TR:', Math.round(now - self.state.startTime), 'ms)');
     }
-
-    // Vérifier le délai minimum entre deux appuis (150ms)
-    if (self.state.lastResponseTime > 0 && (now - self.state.lastResponseTime) < 150) {
-      e.preventDefault();
-      e.stopImmediatePropagation();
-      console.warn('⚠️ Appui trop rapide (<150ms) - BLOQUÉ');
-      return false;
-    }
-
-    // Appui valide : enregistrer le timestamp et marquer qu'on a eu un appui
-    self.state.lastResponseTime = now;
-    self.state.hasHadFirstPress = true;
-    console.log('✓ Appui valide détecté (TR:', Math.round(now - self.state.startTime), 'ms)');
   }
 };
 
-// Ajouter les listeners (keypress avec capture=true pour être AVANT lab.js)
-document.addEventListener('keydown', handleKeyDown);
-document.addEventListener('keyup', handleKeyUp);
+// Ajouter les listeners avec capture=true (AVANT lab.js)
+document.addEventListener('keydown', handleKeyDown, true);
+document.addEventListener('keyup', handleKeyUp, true);
 document.addEventListener('keypress', handleKeyPress, true);
 
 // Nettoyer à la fin
 this.on('end', function() {
-  document.removeEventListener('keydown', handleKeyDown);
-  document.removeEventListener('keyup', handleKeyUp);
+  document.removeEventListener('keydown', handleKeyDown, true);
+  document.removeEventListener('keyup', handleKeyUp, true);
   document.removeEventListener('keypress', handleKeyPress, true);
 });
 
