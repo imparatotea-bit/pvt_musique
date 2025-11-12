@@ -378,15 +378,18 @@ export default function Experiment() {
         } else {
           console.log('⚠️ [DEV MODE] → Passage à thank_you');
           setStep('thank_you');
-          exportData()
-            .then(() => {
-              console.log('✅ [DEV MODE] Export réussi');
-              setExportStatus('success');
-            })
-            .catch((err) => {
-              console.error('❌ [DEV MODE] Export échoué:', err);
-              setExportStatus('error');
-            });
+          // Wait for state update to complete before exporting
+          setTimeout(() => {
+            exportData()
+              .then(() => {
+                console.log('✅ [DEV MODE] Export réussi');
+                setExportStatus('success');
+              })
+              .catch((err) => {
+                console.error('❌ [DEV MODE] Export échoué:', err);
+                setExportStatus('error');
+              });
+          }, 0);
         }
       }
     };
