@@ -128,6 +128,47 @@ app.post('/api/save-data', (req, res) => {
   }
 });
 
+// POST /api/assign-condition - Assignation DÉTERMINISTE C1/C2 pour forcer 50/50
+app.post('/api/assign-condition', (req, res) => {
+  try {
+    const { isHabitue } = req.body;
+
+    // Compter les participants COMPLÉTÉS uniquement (pas les en-cours)
+    const c1CountResult = db.exec('SELECT COUNT(*) FROM participants WHERE condition = "C1"');
+    const c2CountResult = db.exec('SELECT COUNT(*) FROM participants WHERE condition = "C2"');
+
+    const c1Count = c1CountResult[0]?.values[0]?.[0] || 0;
+    const c2Count = c2CountResult[0]?.values[0]?.[0] || 0;
+
+    console.log(`🎯 Assignation déterministe: C1=${c1Count}, C2=${c2Count}, isHabitue=${isHabitue}`);
+
+    let assignedCondition;
+
+    if (c1Count < c2Count) {
+      // Plus de C2 → assigner C1
+      assignedCondition = 'C1';
+      console.log(`  → C1 sous-représenté (${c1Count} vs ${c2Count}) → C1`);
+    } else if (c2Count < c1Count) {
+      // Plus de C1 → assigner C2
+      assignedCondition = 'C2';
+      console.log(`  → C2 sous-représenté (${c2Count} vs ${c1Count}) → C2`);
+    } else {
+      // Égalité → alterner selon le nombre total
+      const total = c1Count + c2Count;
+      assignedCondition = (total % 2 === 0) ? 'C1' : 'C2';
+      console.log(`  → Égalité (${c1Count}=${c2Count}) → alternance → ${assignedCondition}`);
+    }
+
+    console.log(`✅ Assignation: ${assignedCondition}`);
+
+    res.json({ condition: assignedCondition });
+
+  } catch (error) {
+    console.error('❌ Erreur assign-condition:', error);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
 // GET /api/stats
 app.get('/api/stats', (req, res) => {
   try {

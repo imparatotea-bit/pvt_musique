@@ -49,8 +49,21 @@ export default function Experiment() {
 
   // Control music based on step and condition
   useEffect(() => {
-    if (!condition || !audioReady) {
-      console.log('🎵 Musique: condition non remplie (condition:', condition, 'audioReady:', audioReady, ')');
+    if (!audioReady) {
+      console.log('🎵 Musique: audio pas prêt');
+      return;
+    }
+
+    // Jouer la musique PENDANT le questionnaire (welcome + questionnaire)
+    if (step === 'welcome' || step === 'questionnaire') {
+      console.log('🎵 Musique: questionnaire → JOUER');
+      play();
+      return;
+    }
+
+    // APRÈS le questionnaire: contrôle selon C1/C2
+    if (!condition) {
+      console.log('🎵 Musique: condition pas encore assignée');
       return;
     }
 
@@ -86,39 +99,78 @@ export default function Experiment() {
   };
 
   // === QUESTIONNAIRE ===
-  const handleQuestionnaireSubmit = (e) => {
+  const handleQuestionnaireSubmit = async (e) => {
     e.preventDefault();
 
-    const isHabitue = musicHabit >= 6;
-    const assignedCondition = Math.random() < 0.5 ? 'C1' : 'C2';
+    const isHabitue = musicHabit >= 5; // ≥5 = habitué
     const pid = `P${Date.now()}`;
 
-    console.log('🎲 Assignation aléatoire:', {
-      musicHabit,
-      isHabitue: isHabitue ? 'OUI (≥6)' : 'NON (<6)',
-      condition: assignedCondition,
-      participantId: pid.substring(0, 12) + '...',
-    });
-    console.log(`🎲 ${assignedCondition === 'C1' ? 'C1 = Silence puis Musique' : 'C2 = Musique puis Silence'}`);
+    console.log('🎯 Demande assignation déterministe au backend...');
 
-    setCondition(assignedCondition);
-    setParticipantId(pid);
+    try {
+      // Demander au backend quelle condition assigner (déterministe pour 50/50)
+      const response = await fetch('/api/assign-condition', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isHabitue }),
+      });
 
-    updateData('questionnaire', {
-      age: parseInt(age),
-      gender,
-      musicHabit,
-      fatigue,
-      stress,
-      isHabitue,
-      condition: assignedCondition,
-      timestamp: new Date().toISOString(),
-    });
+      if (!response.ok) {
+        throw new Error('Erreur assignation condition');
+      }
 
-    // Go to first categorization instructions
-    setCatImages(shuffleImages());
-    setCatCurrentIndex(0);
-    setStep('inst_cat1');
+      const { condition: assignedCondition } = await response.json();
+
+      console.log('🎯 Assignation déterministe reçue:', {
+        musicHabit,
+        isHabitue: isHabitue ? 'OUI (≥5)' : 'NON (<5)',
+        condition: assignedCondition,
+        participantId: pid.substring(0, 12) + '...',
+      });
+      console.log(`🎯 ${assignedCondition === 'C1' ? 'C1 = Silence puis Musique' : 'C2 = Musique puis Silence'}`);
+
+      setCondition(assignedCondition);
+      setParticipantId(pid);
+
+      updateData('questionnaire', {
+        age: parseInt(age),
+        gender,
+        musicHabit,
+        fatigue,
+        stress,
+        isHabitue,
+        condition: assignedCondition,
+        timestamp: new Date().toISOString(),
+      });
+
+      // Go to first categorization instructions
+      setCatImages(shuffleImages());
+      setCatCurrentIndex(0);
+      setStep('inst_cat1');
+
+    } catch (error) {
+      console.error('❌ Erreur assignation:', error);
+      // Fallback en cas d'erreur backend
+      const fallbackCondition = 'C1';
+      console.warn('⚠️ Fallback sur C1');
+      setCondition(fallbackCondition);
+      setParticipantId(pid);
+
+      updateData('questionnaire', {
+        age: parseInt(age),
+        gender,
+        musicHabit,
+        fatigue,
+        stress,
+        isHabitue,
+        condition: fallbackCondition,
+        timestamp: new Date().toISOString(),
+      });
+
+      setCatImages(shuffleImages());
+      setCatCurrentIndex(0);
+      setStep('inst_cat1');
+    }
   };
 
   // === CATEGORIZATION ===
