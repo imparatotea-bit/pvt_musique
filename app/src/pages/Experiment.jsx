@@ -6,24 +6,25 @@ import Slider from '../components/Slider';
 
 // Image stimuli for categorization
 const imageStimuli = [
-  { id: 1, name: 'tree.jpg', category: 'natural' },
-  { id: 2, name: 'car.jpg', category: 'artificial' },
-  { id: 3, name: 'flower.jpg', category: 'natural' },
-  { id: 4, name: 'building.jpg', category: 'artificial' },
-  { id: 5, name: 'bird.jpg', category: 'natural' },
-  { id: 6, name: 'computer.jpg', category: 'artificial' },
-  { id: 7, name: 'mountain.jpg', category: 'natural' },
-  { id: 8, name: 'phone.jpg', category: 'artificial' },
-  { id: 9, name: 'cat.jpg', category: 'natural' },
-  { id: 10, name: 'chair.jpg', category: 'artificial' },
+  { id: 1, name: 'Arbre', category: 'natural' },
+  { id: 2, name: 'Voiture', category: 'artificial' },
+  { id: 3, name: 'Fleur', category: 'natural' },
+  { id: 4, name: 'Immeuble', category: 'artificial' },
+  { id: 5, name: 'Oiseau', category: 'natural' },
+  { id: 6, name: 'Ordinateur', category: 'artificial' },
+  { id: 7, name: 'Montagne', category: 'natural' },
+  { id: 8, name: 'Téléphone', category: 'artificial' },
+  { id: 9, name: 'Chat', category: 'natural' },
+  { id: 10, name: 'Chaise', category: 'artificial' },
 ];
 
 export default function Experiment() {
-  const { updateData, addTrialData, setCondition, setParticipantId, condition, exportData, participantId } = useExperiment();
+  const { updateData, addTrialData, setCondition, setParticipantId, condition, exportData, participantId, data } = useExperiment();
   const { loadTrack, play, pause } = useAudio();
 
-  // Global step management
-  const [step, setStep] = useState('welcome'); // welcome, questionnaire, cat1, pvt1, cat2, pvt2, thank_you
+  // Step: start, welcome, questionnaire, inst_cat1, cat1, inst_pvt1, pvt1, inst_cat2, cat2, inst_pvt2, pvt2, thank_you
+  const [step, setStep] = useState('start');
+  const [audioReady, setAudioReady] = useState(false);
 
   // Questionnaire state
   const [age, setAge] = useState('');
@@ -38,19 +39,18 @@ export default function Experiment() {
   const [catStartTime, setCatStartTime] = useState(0);
 
   // PVT state
-  const [pvtState, setPvtState] = useState('ready'); // ready, fixation, stimulus, feedback
+  const [pvtState, setPvtState] = useState('ready');
   const [pvtCurrentTrial, setPvtCurrentTrial] = useState(0);
   const [pvtTimer, setPvtTimer] = useState('0000');
   const [pvtStartTime, setPvtStartTime] = useState(0);
   const [pvtBlockStartTime, setPvtBlockStartTime] = useState(0);
-  const [pvtTotalTrials, setPvtTotalTrials] = useState(48); // Will be calculated dynamically
+  const [pvtLastKeyPressTime, setPvtLastKeyPressTime] = useState(0);
   const pvtTimerRef = useRef(null);
 
   // Thank you state
-  const [completionCode, setCompletionCode] = useState('');
   const [exportStatus, setExportStatus] = useState('pending');
 
-  // Shuffle images for categorization
+  // Shuffle images
   const shuffleImages = useCallback(() => {
     const shuffled = [...imageStimuli];
     for (let i = shuffled.length - 1; i > 0; i--) {
@@ -62,18 +62,26 @@ export default function Experiment() {
 
   // Control music based on step and condition
   useEffect(() => {
-    if (!condition) return;
+    if (!condition || !audioReady) return;
 
     const shouldPlayMusic =
-      (condition === 'C1' && (step === 'cat2' || step === 'pvt2')) ||
-      (condition === 'C2' && (step === 'cat1' || step === 'pvt1'));
+      (condition === 'C1' && (step === 'inst_cat2' || step === 'cat2' || step === 'inst_pvt2' || step === 'pvt2')) ||
+      (condition === 'C2' && (step === 'inst_cat1' || step === 'cat1' || step === 'inst_pvt1' || step === 'pvt1'));
 
     if (shouldPlayMusic) {
       play();
     } else {
       pause();
     }
-  }, [step, condition, play, pause]);
+  }, [step, condition, audioReady, play, pause]);
+
+  // === START (Audio Authorization) ===
+  const handleAudioStart = () => {
+    // Load music file
+    loadTrack('/static/musique.mp3');
+    setAudioReady(true);
+    setStep('welcome');
+  };
 
   // === QUESTIONNAIRE ===
   const handleQuestionnaireSubmit = (e) => {
@@ -97,14 +105,10 @@ export default function Experiment() {
       timestamp: new Date().toISOString(),
     });
 
-    // Load and start music
-    loadTrack('/static/musique.mp3');
-    play();
-
-    // Go to cat1
+    // Go to first categorization instructions
     setCatImages(shuffleImages());
     setCatCurrentIndex(0);
-    setTimeout(() => setStep('cat1'), 1000);
+    setStep('inst_cat1');
   };
 
   // === CATEGORIZATION ===
@@ -121,15 +125,11 @@ export default function Experiment() {
     });
 
     if (catCurrentIndex + 1 >= catImages.length) {
-      // Categorization complete, move to next step
+      // Categorization complete
       if (step === 'cat1') {
-        setPvtState('ready');
-        setPvtCurrentTrial(0);
-        setStep('pvt1');
+        setStep('inst_pvt1');
       } else {
-        setPvtState('ready');
-        setPvtCurrentTrial(0);
-        setStep('pvt2');
+        setStep('inst_pvt2');
       }
     } else {
       setCatCurrentIndex(prev => prev + 1);
@@ -158,19 +158,19 @@ export default function Experiment() {
   }, [step, handleCatResponse]);
 
   // === PVT ===
-  const PVT_DURATION_MS = 5 * 60 * 1000; // 5 minutes exact
+  const PVT_DURATION_MS = 5 * 60 * 1000; // 5 minutes
 
   const startPVTTrial = useCallback(() => {
     setPvtState('fixation');
-    const delay = 2000 + Math.random() * 8000; // 2-10s
+    const delay = 2000 + Math.random() * 8000;
 
     setTimeout(() => {
       setPvtState('stimulus');
       setPvtStartTime(performance.now());
 
-      // Start timer animation
       const startTime = performance.now();
       const updateTimer = () => {
+        if (pvtTimerRef.current === null) return;
         const elapsed = Math.floor(performance.now() - startTime);
         setPvtTimer(String(elapsed).padStart(4, '0'));
         pvtTimerRef.current = requestAnimationFrame(updateTimer);
@@ -180,11 +180,30 @@ export default function Experiment() {
   }, []);
 
   const handlePVTResponse = useCallback(() => {
-    if (pvtState !== 'stimulus') return;
+    if (pvtState !== 'stimulus') {
+      // Ignore invalid presses (anti-cheat intelligent)
+      return;
+    }
 
-    const rt = performance.now() - pvtStartTime;
+    const now = performance.now();
+
+    // Anti-spam: ignore if pressed < 150ms ago
+    if (now - pvtLastKeyPressTime < 150) {
+      return;
+    }
+
+    setPvtLastKeyPressTime(now);
+
+    const rt = now - pvtStartTime;
+
+    // Ignore too fast responses (< 100ms = anticipation)
+    if (rt < 100) {
+      return;
+    }
+
     if (pvtTimerRef.current) {
       cancelAnimationFrame(pvtTimerRef.current);
+      pvtTimerRef.current = null;
     }
 
     const currentBlock = step === 'pvt1' ? 1 : 2;
@@ -194,20 +213,17 @@ export default function Experiment() {
       timestamp: new Date().toISOString(),
     });
 
-    // Check if we should continue or stop (5min limit)
-    const elapsedTime = performance.now() - pvtBlockStartTime;
+    // Check time limit
+    const elapsedTime = now - pvtBlockStartTime;
     if (elapsedTime >= PVT_DURATION_MS || pvtCurrentTrial + 1 >= 60) {
-      // PVT block complete
+      // Block complete
       if (step === 'pvt1') {
         setCatImages(shuffleImages());
         setCatCurrentIndex(0);
-        setStep('cat2');
+        setStep('inst_cat2');
       } else {
-        // Experiment complete
+        // Experiment complete - export data
         setStep('thank_you');
-        const code = `PVT-${participantId}-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
-        setCompletionCode(code);
-
         exportData()
           .then(() => setExportStatus('success'))
           .catch(() => setExportStatus('error'));
@@ -217,11 +233,12 @@ export default function Experiment() {
       setPvtTimer('0000');
       startPVTTrial();
     }
-  }, [pvtState, pvtStartTime, pvtCurrentTrial, step, pvtBlockStartTime, addTrialData, startPVTTrial, participantId, exportData, shuffleImages]);
+  }, [pvtState, pvtStartTime, pvtCurrentTrial, step, pvtBlockStartTime, pvtLastKeyPressTime, addTrialData, startPVTTrial, exportData, shuffleImages]);
 
   useEffect(() => {
     if ((step === 'pvt1' || step === 'pvt2') && pvtState === 'ready') {
       setPvtBlockStartTime(performance.now());
+      setPvtCurrentTrial(0);
       setTimeout(() => startPVTTrial(), 1000);
     }
   }, [step, pvtState, startPVTTrial]);
@@ -240,7 +257,7 @@ export default function Experiment() {
     }
   }, [pvtState, handlePVTResponse]);
 
-  // Cleanup timer on unmount
+  // Cleanup
   useEffect(() => {
     return () => {
       if (pvtTimerRef.current) {
@@ -249,26 +266,63 @@ export default function Experiment() {
     };
   }, []);
 
+  // Calculate stats for thank you page
+  const calculateStats = () => {
+    const pvt1 = data.pvtBlock1 || [];
+    const pvt2 = data.pvtBlock2 || [];
+
+    const calculateMean = (arr) => {
+      if (!arr.length) return 0;
+      const sum = arr.reduce((acc, trial) => acc + trial.rt, 0);
+      return Math.round(sum / arr.length);
+    };
+
+    // Determine which block had music
+    const isMusicFirst = condition === 'C2';
+
+    const rtWithMusic = isMusicFirst ? calculateMean(pvt1) : calculateMean(pvt2);
+    const rtWithoutMusic = isMusicFirst ? calculateMean(pvt2) : calculateMean(pvt1);
+
+    return { rtWithMusic, rtWithoutMusic };
+  };
+
   // === RENDER ===
   return (
     <Layout>
-      <div className="w-full h-screen flex items-center justify-center overflow-hidden">
-        {/* WELCOME */}
-        {step === 'welcome' && (
-          <div className="card max-w-2xl mx-auto text-center space-y-8 animate-fade-in">
-            <h1 className="text-5xl font-semibold text-apple-gray-900 mb-8">
+      <div className="w-full h-full flex items-center justify-center p-4 md:p-8">
+        {/* START - Audio Authorization */}
+        {step === 'start' && (
+          <div className="max-w-2xl mx-auto text-center space-y-8">
+            <h1 className="text-4xl md:text-5xl font-semibold text-apple-gray-900">
               Expérience
             </h1>
-
             <div className="space-y-4 text-lg text-apple-gray-700">
               <p>Étude sur l'attention et la musique</p>
               <p>Durée : <strong>~10 minutes</strong></p>
               <p>Munissez-vous de casque ou d'écouteurs</p>
             </div>
+            <button
+              onClick={handleAudioStart}
+              className="btn-primary btn-large"
+            >
+              Autoriser l'audio et commencer
+            </button>
+          </div>
+        )}
 
+        {/* WELCOME */}
+        {step === 'welcome' && (
+          <div className="max-w-2xl mx-auto text-center space-y-8 animate-fade-in">
+            <h1 className="text-4xl md:text-5xl font-semibold text-apple-gray-900">
+              Bienvenue
+            </h1>
+            <div className="space-y-4 text-lg text-apple-gray-700">
+              <p>Cette expérience comporte plusieurs tâches</p>
+              <p>Suivez attentivement les instructions</p>
+            </div>
             <button
               onClick={() => setStep('questionnaire')}
-              className="btn-primary btn-large mt-8"
+              className="btn-primary btn-large"
             >
               Commencer
             </button>
@@ -277,111 +331,172 @@ export default function Experiment() {
 
         {/* QUESTIONNAIRE */}
         {step === 'questionnaire' && (
-          <div className="card max-w-2xl mx-auto animate-fade-in overflow-y-auto max-h-[90vh]">
-            <h1 className="text-2xl md:text-3xl font-semibold text-apple-gray-900 mb-6 text-center">
-              Questionnaire
+          <div className="max-w-3xl mx-auto w-full animate-fade-in">
+            <div className="bg-white rounded-3xl shadow-soft-lg border border-apple-gray-200/50 p-6 md:p-10 max-h-[90vh] overflow-y-auto">
+              <h1 className="text-2xl md:text-3xl font-semibold text-apple-gray-900 mb-6 text-center">
+                Questionnaire
+              </h1>
+
+              <form onSubmit={handleQuestionnaireSubmit} className="space-y-6">
+                <div>
+                  <label className="block text-sm font-medium text-apple-gray-700 mb-2">Âge</label>
+                  <input
+                    type="number"
+                    min="18"
+                    max="99"
+                    required
+                    value={age}
+                    onChange={(e) => setAge(e.target.value)}
+                    className="w-full px-4 py-3 border border-apple-gray-300 rounded-xl focus:ring-2 focus:ring-apple-gray-900 focus:border-transparent"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-apple-gray-700 mb-2">Genre</label>
+                  <select
+                    required
+                    value={gender}
+                    onChange={(e) => setGender(e.target.value)}
+                    className="w-full px-4 py-3 border border-apple-gray-300 rounded-xl focus:ring-2 focus:ring-apple-gray-900 focus:border-transparent"
+                  >
+                    <option value="">Sélectionner</option>
+                    <option value="F">Femme</option>
+                    <option value="H">Homme</option>
+                    <option value="A">Autre</option>
+                    <option value="N">Préfère ne pas répondre</option>
+                  </select>
+                </div>
+
+                <div>
+                  <Slider
+                    label="Avez-vous l'habitude de travailler/étudier en musique ?"
+                    min={0}
+                    max={10}
+                    defaultValue={5}
+                    onChange={setMusicHabit}
+                  />
+                  <div className="flex justify-between text-xs text-apple-gray-500 mt-2">
+                    <span>Jamais</span>
+                    <span>Toujours</span>
+                  </div>
+                </div>
+
+                <div>
+                  <Slider label="Niveau de fatigue" min={0} max={10} defaultValue={5} onChange={setFatigue} />
+                  <div className="flex justify-between text-xs text-apple-gray-500 mt-2">
+                    <span>Pas fatigué</span>
+                    <span>Très fatigué</span>
+                  </div>
+                </div>
+
+                <div>
+                  <Slider label="Niveau de stress" min={0} max={10} defaultValue={5} onChange={setStress} />
+                  <div className="flex justify-between text-xs text-apple-gray-500 mt-2">
+                    <span>Pas stressé</span>
+                    <span>Très stressé</span>
+                  </div>
+                </div>
+
+                <button type="submit" className="btn-primary w-full mt-6">
+                  Continuer
+                </button>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* INSTRUCTIONS CATEGORIZATION */}
+        {(step === 'inst_cat1' || step === 'inst_cat2') && (
+          <div className="max-w-3xl mx-auto text-center space-y-8 animate-fade-in">
+            <h1 className="text-3xl md:text-4xl font-semibold text-apple-gray-900">
+              Tâche de catégorisation
             </h1>
+            <div className="space-y-6 text-lg text-apple-gray-700">
+              <p>Des mots vont apparaître à l'écran</p>
+              <p>Indiquez si l'objet est <strong>naturel</strong> ou <strong>artificiel</strong></p>
 
-            <form onSubmit={handleQuestionnaireSubmit} className="space-y-4 md:space-y-6">
-              <div>
-                <label className="block text-sm font-medium text-apple-gray-700 mb-2">Âge</label>
-                <input
-                  type="number"
-                  min="18"
-                  max="99"
-                  required
-                  value={age}
-                  onChange={(e) => setAge(e.target.value)}
-                  className="w-full px-4 py-2 border border-apple-gray-300 rounded-lg focus:ring-2 focus:ring-apple-gray-900 focus:border-transparent"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-apple-gray-700 mb-2">Genre</label>
-                <select
-                  required
-                  value={gender}
-                  onChange={(e) => setGender(e.target.value)}
-                  className="w-full px-4 py-2 border border-apple-gray-300 rounded-lg focus:ring-2 focus:ring-apple-gray-900 focus:border-transparent"
-                >
-                  <option value="">Sélectionner</option>
-                  <option value="F">Femme</option>
-                  <option value="H">Homme</option>
-                  <option value="A">Autre</option>
-                  <option value="N">Préfère ne pas répondre</option>
-                </select>
-              </div>
-
-              <div>
-                <Slider
-                  label="Avez-vous l'habitude de travailler/étudier en musique ?"
-                  min={0}
-                  max={10}
-                  defaultValue={5}
-                  onChange={setMusicHabit}
-                />
-                <div className="flex justify-between text-xs text-apple-gray-500 mt-2">
-                  <span>Jamais</span>
-                  <span>Toujours</span>
+              <div className="bg-apple-gray-50 p-8 rounded-2xl inline-block">
+                <div className="space-y-4 text-xl">
+                  <p><kbd className="px-4 py-2 bg-white rounded-xl shadow-soft font-mono font-bold border border-apple-gray-200">F</kbd> = Naturel</p>
+                  <p><kbd className="px-4 py-2 bg-white rounded-xl shadow-soft font-mono font-bold border border-apple-gray-200">J</kbd> = Artificiel</p>
                 </div>
               </div>
 
-              <div>
-                <Slider label="Niveau de fatigue" min={0} max={10} defaultValue={5} onChange={setFatigue} />
-                <div className="flex justify-between text-xs text-apple-gray-500 mt-2">
-                  <span>Pas fatigué</span>
-                  <span>Très fatigué</span>
-                </div>
-              </div>
-
-              <div>
-                <Slider label="Niveau de stress" min={0} max={10} defaultValue={5} onChange={setStress} />
-                <div className="flex justify-between text-xs text-apple-gray-500 mt-2">
-                  <span>Pas stressé</span>
-                  <span>Très stressé</span>
-                </div>
-              </div>
-
-              <button type="submit" className="btn-primary btn-large w-full mt-6">
-                Commencer
-              </button>
-            </form>
+              <p className="text-base text-apple-gray-600">
+                Répondez rapidement selon votre première impression
+              </p>
+            </div>
+            <button
+              onClick={() => setStep(step === 'inst_cat1' ? 'cat1' : 'cat2')}
+              className="btn-primary btn-large"
+            >
+              Commencer
+            </button>
           </div>
         )}
 
         {/* CATEGORIZATION */}
         {(step === 'cat1' || step === 'cat2') && catImages[catCurrentIndex] && (
           <div className="text-center w-full">
-            <div className="mb-12">
-              <div className="w-48 h-48 md:w-64 md:h-64 mx-auto bg-apple-gray-200 rounded-3xl flex items-center justify-center shadow-soft-lg">
-                <span className="text-2xl md:text-3xl font-medium text-apple-gray-700">
-                  {catImages[catCurrentIndex].name.replace('.jpg', '')}
-                </span>
+            <div className="mb-16">
+              <div className="text-7xl md:text-8xl font-bold text-apple-gray-900">
+                {catImages[catCurrentIndex].name}
               </div>
             </div>
 
-            <div className="flex gap-4 md:gap-8 justify-center">
+            <div className="flex gap-12 justify-center">
               <div className="text-apple-gray-600">
-                <kbd className="px-3 md:px-4 py-2 bg-apple-gray-100 rounded font-mono font-bold text-lg md:text-xl">F</kbd>
-                <p className="mt-2 text-sm md:text-base">Naturel</p>
+                <kbd className="px-6 py-3 bg-apple-gray-100 rounded-xl font-mono font-bold text-2xl shadow-soft">F</kbd>
+                <p className="mt-4 text-lg">Naturel</p>
               </div>
               <div className="text-apple-gray-600">
-                <kbd className="px-3 md:px-4 py-2 bg-apple-gray-100 rounded font-mono font-bold text-lg md:text-xl">J</kbd>
-                <p className="mt-2 text-sm md:text-base">Artificiel</p>
+                <kbd className="px-6 py-3 bg-apple-gray-100 rounded-xl font-mono font-bold text-2xl shadow-soft">J</kbd>
+                <p className="mt-4 text-lg">Artificiel</p>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* INSTRUCTIONS PVT */}
+        {(step === 'inst_pvt1' || step === 'inst_pvt2') && (
+          <div className="max-w-3xl mx-auto text-center space-y-8 animate-fade-in">
+            <h1 className="text-3xl md:text-4xl font-semibold text-apple-gray-900">
+              Tâche de vigilance
+            </h1>
+            <div className="space-y-6 text-lg text-apple-gray-700">
+              <p>Un compteur va apparaître à l'écran</p>
+              <p>Dès qu'il démarre, appuyez sur <kbd className="px-4 py-2 bg-apple-gray-100 rounded-xl shadow-soft font-mono font-bold">ESPACE</kbd> le plus vite possible</p>
+
+              <div className="bg-apple-gray-50 p-8 rounded-2xl">
+                <p className="text-base text-apple-gray-600">
+                  N'anticipez pas • Réagissez rapidement • Restez concentré
+                </p>
+              </div>
+
+              <p className="text-base text-apple-gray-500">
+                Durée : ~5 minutes
+              </p>
+            </div>
+            <button
+              onClick={() => {
+                setPvtState('ready');
+                setPvtCurrentTrial(0);
+                setStep(step === 'inst_pvt1' ? 'pvt1' : 'pvt2');
+              }}
+              className="btn-primary btn-large"
+            >
+              Commencer
+            </button>
           </div>
         )}
 
         {/* PVT */}
         {(step === 'pvt1' || step === 'pvt2') && (
           <div className="text-center w-full">
-            <div className="mb-8">
-              <p className="text-xs md:text-sm text-apple-gray-400 mb-8">Temps estimé : 5 min</p>
-            </div>
+            <p className="text-sm text-apple-gray-400 mb-12">Temps estimé : 5 min</p>
 
             {pvtState === 'fixation' && (
-              <div className="timer-display text-apple-gray-400">0000</div>
+              <div className="timer-display text-apple-gray-300">0000</div>
             )}
 
             {pvtState === 'stimulus' && (
@@ -390,8 +505,8 @@ export default function Experiment() {
 
             {pvtState === 'ready' && (
               <div>
-                <div className="timer-display text-apple-gray-400 mb-8">0000</div>
-                <p className="text-base md:text-lg text-apple-gray-600">Préparez-vous...</p>
+                <div className="timer-display text-apple-gray-300 mb-8">0000</div>
+                <p className="text-xl text-apple-gray-600">Préparez-vous...</p>
               </div>
             )}
           </div>
@@ -399,41 +514,42 @@ export default function Experiment() {
 
         {/* THANK YOU */}
         {step === 'thank_you' && (
-          <div className="card max-w-2xl mx-auto text-center space-y-8 animate-fade-in">
-            <h1 className="text-4xl font-semibold text-apple-gray-900">Merci</h1>
+          <div className="max-w-4xl mx-auto text-center space-y-8 animate-fade-in">
+            <h1 className="text-4xl md:text-5xl font-semibold text-apple-gray-900">
+              Merci !
+            </h1>
 
-            <div className="space-y-3 text-lg text-apple-gray-600">
-              <p>Vos données ont été enregistrées.</p>
+            <p className="text-lg text-apple-gray-600">
+              Voici vos résultats
+            </p>
+
+            <div className="grid md:grid-cols-2 gap-6 max-w-3xl mx-auto">
+              <div className="bg-white p-8 rounded-3xl shadow-soft-lg border border-apple-gray-200">
+                <p className="text-sm uppercase tracking-wide text-apple-gray-500 mb-2">Avec musique</p>
+                <p className="text-5xl font-bold text-apple-gray-900">{calculateStats().rtWithMusic}</p>
+                <p className="text-sm text-apple-gray-500 mt-2">millisecondes</p>
+              </div>
+
+              <div className="bg-white p-8 rounded-3xl shadow-soft-lg border border-apple-gray-200">
+                <p className="text-sm uppercase tracking-wide text-apple-gray-500 mb-2">Sans musique</p>
+                <p className="text-5xl font-bold text-apple-gray-900">{calculateStats().rtWithoutMusic}</p>
+                <p className="text-sm text-apple-gray-500 mt-2">millisecondes</p>
+              </div>
             </div>
 
-            <div className="bg-apple-gray-100 p-8 rounded-2xl">
-              <p className="text-sm text-apple-gray-500 mb-2 uppercase tracking-wide">
-                Code de complétion
-              </p>
-              <p className="text-3xl font-mono font-semibold text-apple-gray-900">
-                {completionCode}
-              </p>
+            <div className="mt-8">
+              {exportStatus === 'pending' && (
+                <p className="text-apple-gray-600">Envoi des données...</p>
+              )}
+              {exportStatus === 'success' && (
+                <p className="text-apple-gray-900">✓ Données enregistrées avec succès</p>
+              )}
+              {exportStatus === 'error' && (
+                <p className="text-apple-gray-600">Erreur d'envoi - Contactez l'expérimentateur</p>
+              )}
             </div>
 
-            {exportStatus === 'pending' && (
-              <div className="bg-apple-gray-100 p-4 rounded-lg">
-                <p className="text-apple-gray-600">Envoi...</p>
-              </div>
-            )}
-
-            {exportStatus === 'success' && (
-              <div className="bg-apple-gray-100 p-4 rounded-lg">
-                <p className="text-apple-gray-900">Enregistré</p>
-              </div>
-            )}
-
-            {exportStatus === 'error' && (
-              <div className="bg-apple-gray-100 p-4 rounded-lg">
-                <p className="text-apple-gray-600">Erreur - Contactez l'expérimentateur</p>
-              </div>
-            )}
-
-            <p className="text-apple-gray-400 text-sm pt-4">
+            <p className="text-sm text-apple-gray-400 pt-8">
               Vous pouvez fermer cette fenêtre
             </p>
           </div>
