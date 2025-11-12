@@ -92,7 +92,7 @@ export default function Experiment() {
       console.log('⏸️ Arrêt musique');
       pause();
     }
-  }, [step, condition, audioReady]);
+  }, [step, condition, audioReady, play, pause]);
 
   // === START (Audio Authorization) ===
   const handleAudioStart = async () => {
@@ -159,6 +159,11 @@ export default function Experiment() {
       });
 
       // Go to first categorization instructions (first 21 images)
+      // Vérifier que les images sont initialisées (race condition protection)
+      if (allShuffledImages.length === 0) {
+        console.warn('⚠️ Images pas encore initialisées, réinitialisation...');
+        initializeImages();
+      }
       setCatImages(getCatImages(1));
       setCatCurrentIndex(0);
       setStep('inst_cat1');
@@ -182,6 +187,11 @@ export default function Experiment() {
         timestamp: new Date().toISOString(),
       });
 
+      // Vérifier que les images sont initialisées (race condition protection)
+      if (allShuffledImages.length === 0) {
+        console.warn('⚠️ Images pas encore initialisées, réinitialisation...');
+        initializeImages();
+      }
       setCatImages(getCatImages(1));
       setCatCurrentIndex(0);
       setStep('inst_cat1');
@@ -237,11 +247,18 @@ export default function Experiment() {
   // === PVT ===
   const PVT_DURATION_MS = 5 * 60 * 1000; // 5 minutes
 
+  const pvtDelayTimeoutRef = useRef(null);
+
   const startPVTTrial = useCallback(() => {
     setPvtState('fixation');
     const delay = 2000 + Math.random() * 8000;
 
-    setTimeout(() => {
+    // Nettoyer timeout précédent si existe
+    if (pvtDelayTimeoutRef.current) {
+      clearTimeout(pvtDelayTimeoutRef.current);
+    }
+
+    pvtDelayTimeoutRef.current = setTimeout(() => {
       setPvtState('stimulus');
       setPvtStartTime(performance.now());
 
@@ -337,11 +354,14 @@ export default function Experiment() {
     }
   }, [pvtState, step, handlePVTResponse]);
 
-  // Cleanup PVT timer
+  // Cleanup PVT timer and timeout on unmount
   useEffect(() => {
     return () => {
       if (pvtTimerRef.current) {
         cancelAnimationFrame(pvtTimerRef.current);
+      }
+      if (pvtDelayTimeoutRef.current) {
+        clearTimeout(pvtDelayTimeoutRef.current);
       }
     };
   }, []);
@@ -354,6 +374,11 @@ export default function Experiment() {
       if (pvtTimerRef.current) {
         cancelAnimationFrame(pvtTimerRef.current);
         pvtTimerRef.current = null;
+      }
+      // Clear delay timeout
+      if (pvtDelayTimeoutRef.current) {
+        clearTimeout(pvtDelayTimeoutRef.current);
+        pvtDelayTimeoutRef.current = null;
       }
       // Reset PVT state
       setPvtState('ready');
@@ -385,6 +410,10 @@ export default function Experiment() {
         if (pvtTimerRef.current) {
           cancelAnimationFrame(pvtTimerRef.current);
           pvtTimerRef.current = null;
+        }
+        if (pvtDelayTimeoutRef.current) {
+          clearTimeout(pvtDelayTimeoutRef.current);
+          pvtDelayTimeoutRef.current = null;
         }
 
         if (step === 'pvt1') {
@@ -601,13 +630,13 @@ export default function Experiment() {
         )}
 
         {/* CATEGORIZATION */}
-        {(step === 'cat1' || step === 'cat2') && catImages[catCurrentIndex] && (
+        {(step === 'cat1' || step === 'cat2') && catImages.length > 0 && catImages[catCurrentIndex] && (
           <div className="text-center w-full">
             <div className="mb-16 flex justify-center">
               <div className="relative rounded-3xl overflow-hidden shadow-soft-xl border border-apple-gray-200">
                 <img
                   src={catImages[catCurrentIndex].url}
-                  alt={catImages[catCurrentIndex].name}
+                  alt={catImages[catCurrentIndex].filename}
                   className="w-96 h-96 object-cover"
                   loading="eager"
                 />
