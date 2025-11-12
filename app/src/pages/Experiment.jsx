@@ -301,9 +301,12 @@ export default function Experiment() {
       } else {
         // Experiment complete - export data
         setStep('thank_you');
-        exportData()
-          .then(() => setExportStatus('success'))
-          .catch(() => setExportStatus('error'));
+        // Wait for state update to complete before exporting
+        setTimeout(() => {
+          exportData()
+            .then(() => setExportStatus('success'))
+            .catch(() => setExportStatus('error'));
+        }, 0);
       }
     } else {
       setPvtCurrentTrial(prev => prev + 1);
