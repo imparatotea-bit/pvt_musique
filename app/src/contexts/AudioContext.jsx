@@ -16,22 +16,56 @@ export const AudioProvider = ({ children }) => {
   const [currentTrack, setCurrentTrack] = useState(null);
 
   const loadTrack = useCallback((src) => {
-    if (audioRef.current) {
-      audioRef.current.pause();
-    }
-    audioRef.current = new Audio(src);
-    audioRef.current.loop = true;
-    audioRef.current.volume = 0.5;
-    setCurrentTrack(src);
-    setIsPlaying(false);
+    return new Promise((resolve, reject) => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+
+      const audio = new Audio(src);
+      audio.loop = true;
+      audio.volume = 0.5;
+      audio.preload = 'auto';
+
+      // Attendre que l'audio soit prêt
+      audio.addEventListener('canplaythrough', () => {
+        console.log('✅ Audio chargé et prêt:', src);
+        resolve();
+      }, { once: true });
+
+      audio.addEventListener('error', (e) => {
+        console.error('❌ Erreur chargement audio:', e);
+        reject(e);
+      });
+
+      audioRef.current = audio;
+      setCurrentTrack(src);
+      setIsPlaying(false);
+
+      // Forcer le chargement
+      audio.load();
+    });
   }, []);
 
   const play = useCallback(() => {
-    if (audioRef.current) {
+    if (audioRef.current && audioRef.current.readyState >= 2) {
+      // readyState >= 2 signifie que l'audio a suffisamment de données
       audioRef.current.play().catch(err => {
-        console.error('Audio playback failed:', err);
+        console.error('❌ Erreur lecture audio:', err.name, err.message);
       });
       setIsPlaying(true);
+    } else if (audioRef.current) {
+      // Si l'audio n'est pas encore prêt, attendre
+      console.warn('⏳ Audio pas encore prêt, attente chargement...');
+      const tryPlay = () => {
+        if (audioRef.current) {
+          audioRef.current.play().catch(err => {
+            console.error('❌ Erreur lecture audio (après attente):', err.name, err.message);
+          });
+          setIsPlaying(true);
+        }
+      };
+      audioRef.current.addEventListener('canplaythrough', tryPlay, { once: true });
     }
   }, []);
 

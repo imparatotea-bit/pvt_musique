@@ -76,11 +76,19 @@ export default function Experiment() {
   }, [step, condition, audioReady, play, pause]);
 
   // === START (Audio Authorization) ===
-  const handleAudioStart = () => {
-    // Load music file
-    loadTrack('/static/musique.mp3');
-    setAudioReady(true);
-    setStep('welcome');
+  const handleAudioStart = async () => {
+    try {
+      // Load music file and wait for it to be ready
+      await loadTrack('/static/musique.mp3');
+      console.log('✅ Audio complètement chargé, prêt à être utilisé');
+      setAudioReady(true);
+      setStep('welcome');
+    } catch (err) {
+      console.error('❌ Impossible de charger l\'audio:', err);
+      // Continuer quand même sans audio
+      setAudioReady(false);
+      setStep('welcome');
+    }
   };
 
   // === QUESTIONNAIRE ===
