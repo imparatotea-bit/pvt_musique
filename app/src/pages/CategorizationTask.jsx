@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useExperiment } from '../contexts/ExperimentContext';
+import { useAudio } from '../contexts/AudioContext';
 import Layout from '../components/Layout';
 
 // Sample images - in production, these would be real image URLs
@@ -19,7 +20,8 @@ const imageStimuli = [
 
 export default function CategorizationTask({ series }) {
   const navigate = useNavigate();
-  const { addTrialData } = useExperiment();
+  const { addTrialData, condition, data } = useExperiment();
+  const { play, pause } = useAudio();
   const [currentTrial, setCurrentTrial] = useState(0);
   const [currentImage, setCurrentImage] = useState(null);
   const [trialStartTime, setTrialStartTime] = useState(0);
@@ -27,6 +29,19 @@ export default function CategorizationTask({ series }) {
   const [feedbackData, setFeedbackData] = useState(null);
   const [isComplete, setIsComplete] = useState(false);
   const [buttonsDisabled, setButtonsDisabled] = useState(false);
+
+  // Control music based on condition
+  // C1: D1=S, D2=M
+  // C2: D1=M, D2=S
+  useEffect(() => {
+    const shouldPlayMusic = (condition === 'C1' && series === 2) || (condition === 'C2' && series === 1);
+
+    if (shouldPlayMusic) {
+      play();
+    } else {
+      pause();
+    }
+  }, [condition, series, play, pause]);
 
   // Shuffle images for this series
   const [stimuli] = useState(() => {

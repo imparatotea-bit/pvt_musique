@@ -1,16 +1,31 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useExperiment } from '../contexts/ExperimentContext';
+import { useAudio } from '../contexts/AudioContext';
 import Layout from '../components/Layout';
 
 export default function PVTTask({ block }) {
   const navigate = useNavigate();
-  const { addTrialData } = useExperiment();
+  const { addTrialData, condition } = useExperiment();
+  const { play, pause } = useAudio();
   const [trialState, setTrialState] = useState('waiting');
   const [currentTrial, setCurrentTrial] = useState(0);
   const [timerValue, setTimerValue] = useState('0000');
   const [feedback, setFeedback] = useState(null);
   const [isComplete, setIsComplete] = useState(false);
+
+  // Control music based on condition
+  // C1: T1=S, T2=M
+  // C2: T1=M, T2=S
+  useEffect(() => {
+    const shouldPlayMusic = (condition === 'C1' && block === 2) || (condition === 'C2' && block === 1);
+
+    if (shouldPlayMusic) {
+      play();
+    } else {
+      pause();
+    }
+  }, [condition, block, play, pause]);
 
   // Anti-cheat state
   const antiCheatRef = useRef({

@@ -25,62 +25,47 @@ export default function ThankYou() {
 
   return (
     <Layout>
-      <div className="card max-w-2xl mx-auto text-center space-y-10 animate-fade-in">
+      <div className="card max-w-2xl mx-auto text-center space-y-8 animate-fade-in">
         <h1 className="text-4xl font-semibold text-apple-gray-900">
-          Merci d'avoir participé !
+          Merci
         </h1>
 
         <div className="space-y-3 text-lg text-apple-gray-600">
           <p>
-            Votre contribution est précieuse pour notre recherche.
-          </p>
-          <p>
-            Vos données ont été enregistrées sur le serveur.
+            Vos données ont été enregistrées.
           </p>
         </div>
 
-        <div className="bg-apple-gray-100 p-10 rounded-3xl border border-apple-gray-200">
-          <p className="text-sm text-apple-gray-500 mb-3 font-medium uppercase tracking-wide">
-            Votre code de complétion
+        <div className="bg-apple-gray-100 p-8 rounded-2xl">
+          <p className="text-sm text-apple-gray-500 mb-2 uppercase tracking-wide">
+            Code de complétion
           </p>
-          <p className="text-4xl font-mono font-semibold text-apple-gray-900 tracking-wider">
+          <p className="text-3xl font-mono font-semibold text-apple-gray-900">
             {completionCode}
-          </p>
-          <p className="text-sm text-apple-gray-500 mt-4">
-            Notez ce code pour validation
           </p>
         </div>
 
         {exportStatus === 'pending' && (
-          <div className="bg-apple-gray-100 p-5 rounded-2xl">
-            <p className="text-apple-gray-600 font-medium">
-              Envoi des données en cours...
-            </p>
+          <div className="bg-apple-gray-100 p-4 rounded-lg">
+            <p className="text-apple-gray-600">Envoi...</p>
           </div>
         )}
 
         {exportStatus === 'success' && (
-          <div className="bg-apple-gray-100 p-5 rounded-2xl border border-apple-gray-200">
-            <p className="text-apple-gray-900 font-medium">
-              Données enregistrées avec succès
-            </p>
+          <div className="bg-apple-gray-100 p-4 rounded-lg">
+            <p className="text-apple-gray-900">Enregistré</p>
           </div>
         )}
 
         {exportStatus === 'error' && (
-          <div className="bg-apple-gray-100 p-5 rounded-2xl border border-apple-gray-200">
-            <p className="text-apple-gray-600 font-medium">
-              Erreur lors de l'envoi au serveur
-            </p>
-            <p className="text-sm text-apple-gray-600 mt-2">
-              Veuillez contacter l'expérimentateur avec votre code de complétion.
-            </p>
+          <div className="bg-apple-gray-100 p-4 rounded-lg">
+            <p className="text-apple-gray-600">Erreur - Contactez l'expérimentateur</p>
           </div>
         )}
 
-        <div className="pt-8 text-apple-gray-400 text-sm">
-          <p>Vous pouvez maintenant fermer cette fenêtre.</p>
-        </div>
+        <p className="text-apple-gray-400 text-sm pt-4">
+          Vous pouvez fermer cette fenêtre
+        </p>
       </div>
     </Layout>
   );

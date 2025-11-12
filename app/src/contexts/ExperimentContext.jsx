@@ -14,14 +14,11 @@ export const ExperimentProvider = ({ children }) => {
   const [participantId, setParticipantId] = useState(null);
   const [condition, setCondition] = useState(null);
   const [data, setData] = useState({
-    demographics: {},
-    musicHabits: {},
-    fatigueStress: {},
+    questionnaire: {},
     pvtBlock1: [],
     pvtBlock2: [],
     categorization1: [],
     categorization2: [],
-    postExperiment: {},
   });
 
   const updateData = useCallback((section, newData) => {
