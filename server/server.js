@@ -11,9 +11,8 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
-// Serve static files (audio, images)
-app.use('/audio', express.static(path.join(__dirname, '..', 'static', 'audio')));
-app.use('/images', express.static(path.join(__dirname, '..', 'static', 'images')));
+// Serve static files
+app.use('/static', express.static(path.join(__dirname, '..', 'static')));
 
 // Variables globales pour la base de données
 let db = null;
@@ -23,7 +22,6 @@ const DB_PATH = path.join(__dirname, 'participants.db');
 async function initDatabase() {
   const SQL = await initSqlJs();
 
-  // Charger la DB existante ou créer une nouvelle
   let buffer = null;
   if (fs.existsSync(DB_PATH)) {
     buffer = fs.readFileSync(DB_PATH);
@@ -31,33 +29,23 @@ async function initDatabase() {
 
   db = new SQL.Database(buffer);
 
-  // Créer les tables si elles n'existent pas
+  // Table des participants complétés UNIQUEMENT
   db.run(`
-    CREATE TABLE IF NOT EXISTS assignments (
+    CREATE TABLE IF NOT EXISTS participants (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       participant_id TEXT UNIQUE NOT NULL,
-      groupe_habitude TEXT NOT NULL,
-      groupe_experimental INTEGER NOT NULL,
-      condition_ordre TEXT NOT NULL,
-      musique_bloc1 INTEGER NOT NULL,
-      musique_bloc2 INTEGER NOT NULL,
-      assigned_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      completed INTEGER DEFAULT 0
+      age INTEGER,
+      gender TEXT,
+      music_habit INTEGER,
+      fatigue INTEGER,
+      stress INTEGER,
+      is_habitue INTEGER,
+      condition TEXT NOT NULL,
+      rt_with_music REAL,
+      rt_without_music REAL,
+      completed_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
   `);
-
-  db.run(`
-    CREATE TABLE IF NOT EXISTS counters (
-      groupe TEXT PRIMARY KEY,
-      count INTEGER DEFAULT 0
-    );
-  `);
-
-  // Initialiser les compteurs
-  const counters = ['habitue_C1', 'habitue_C2', 'non_habitue_C1', 'non_habitue_C2'];
-  counters.forEach(groupe => {
-    db.run('INSERT OR IGNORE INTO counters (groupe, count) VALUES (?, 0)', [groupe]);
-  });
 
   saveDatabase();
   console.log('✅ Base de données initialisée');
@@ -72,217 +60,67 @@ function saveDatabase() {
 }
 
 // ============================================
-// FONCTION PRINCIPALE : ASSIGNER UNE CONDITION
-// ============================================
-function assignCondition(estHabitue) {
-  const prefix = estHabitue ? 'habitue' : 'non_habitue';
-
-  const result = db.exec(`SELECT count FROM counters WHERE groupe IN ('${prefix}_C1', '${prefix}_C2')`);
-  const counts = result[0]?.values || [];
-
-  const countC1 = counts[0]?.[0] || 0;
-  const countC2 = counts[1]?.[0] || 0;
-
-  console.log(`📊 Compteurs actuels pour ${prefix}: C1=${countC1}, C2=${countC2}`);
-
-  // Déterminer quelle condition assigner
-  let assignC1;
-  if (countC1 < countC2) {
-    assignC1 = true;
-  } else if (countC2 < countC1) {
-    assignC1 = false;
-  } else {
-    assignC1 = Math.random() < 0.5;
-  }
-
-  // Construire l'assignation
-  let groupeExperimental, condition, musiqueBloc1, musiqueBloc2;
-
-  if (estHabitue) {
-    if (assignC1) {
-      groupeExperimental = 1;
-      condition = 'musique_puis_silence';
-      musiqueBloc1 = 1;
-      musiqueBloc2 = 0;
-    } else {
-      groupeExperimental = 2;
-      condition = 'silence_puis_musique';
-      musiqueBloc1 = 0;
-      musiqueBloc2 = 1;
-    }
-  } else {
-    if (assignC1) {
-      groupeExperimental = 3;
-      condition = 'musique_puis_silence';
-      musiqueBloc1 = 1;
-      musiqueBloc2 = 0;
-    } else {
-      groupeExperimental = 4;
-      condition = 'silence_puis_musique';
-      musiqueBloc1 = 0;
-      musiqueBloc2 = 1;
-    }
-  }
-
-  return {
-    groupeExperimental,
-    condition,
-    musiqueBloc1,
-    musiqueBloc2,
-    groupeHabitude: estHabitue ? 'habitue' : 'non_habitue',
-    assignedGroup: assignC1 ? 'C1' : 'C2'
-  };
-}
-
-// ============================================
 // ROUTES API
 // ============================================
 
-// POST /api/assign
-app.post('/api/assign', (req, res) => {
-  try {
-    const { participant_id, habitude_score } = req.body;
-
-    if (!participant_id || habitude_score === undefined) {
-      return res.status(400).json({
-        error: 'Paramètres manquants: participant_id et habitude_score requis'
-      });
-    }
-
-    // Vérifier si déjà assigné
-    const existing = db.exec('SELECT * FROM assignments WHERE participant_id = ?', [participant_id]);
-
-    if (existing.length > 0 && existing[0].values.length > 0) {
-      const row = existing[0].values[0];
-      console.log(`♻️  Participant ${participant_id} déjà assigné`);
-      return res.json({
-        groupe_experimental: row[3],
-        condition_ordre: row[4],
-        musique_bloc1: row[5] === 1,
-        musique_bloc2: row[6] === 1,
-        groupe_habitude: row[2],
-        already_assigned: true
-      });
-    }
-
-    // Déterminer habitude
-    const estHabitue = parseInt(habitude_score) >= 5;
-    const assignment = assignCondition(estHabitue);
-
-    // Insérer dans la base
-    db.run(`
-      INSERT INTO assignments
-      (participant_id, groupe_habitude, groupe_experimental, condition_ordre, musique_bloc1, musique_bloc2)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `, [
-      participant_id,
-      assignment.groupeHabitude,
-      assignment.groupeExperimental,
-      assignment.condition,
-      assignment.musiqueBloc1,
-      assignment.musiqueBloc2
-    ]);
-
-    // Incrémenter le compteur
-    db.run('UPDATE counters SET count = count + 1 WHERE groupe = ?',
-      [`${assignment.groupeHabitude}_${assignment.assignedGroup}`]);
-
-    saveDatabase();
-
-    console.log(`✅ Assignation: ${participant_id} → Groupe ${assignment.groupeExperimental}`);
-
-    res.json({
-      groupe_experimental: assignment.groupeExperimental,
-      condition_ordre: assignment.condition,
-      musique_bloc1: assignment.musiqueBloc1 === 1,
-      musique_bloc2: assignment.musiqueBloc2 === 1,
-      groupe_habitude: assignment.groupeHabitude,
-      already_assigned: false
-    });
-
-  } catch (error) {
-    console.error('❌ Erreur assignation:', error);
-    res.status(500).json({ error: 'Erreur serveur' });
-  }
-});
-
-// POST /api/assign-condition (Simple 50/50 balancing for React app)
-app.post('/api/assign-condition', (req, res) => {
-  try {
-    // Generate participant ID
-    const participant_id = Date.now().toString() + '-' + Math.random().toString(36).substr(2, 9);
-
-    // Simple 50/50 balancing: count music vs no_music
-    const musicResult = db.exec(`SELECT COUNT(*) FROM assignments WHERE condition_ordre LIKE '%musique%'`);
-    const noMusicResult = db.exec(`SELECT COUNT(*) FROM assignments WHERE condition_ordre = 'silence'`);
-
-    const musicCount = musicResult[0]?.values[0]?.[0] || 0;
-    const noMusicCount = noMusicResult[0]?.values[0]?.[0] || 0;
-
-    let condition;
-    if (musicCount < noMusicCount) {
-      condition = 'music';
-    } else if (noMusicCount < musicCount) {
-      condition = 'no_music';
-    } else {
-      condition = Math.random() < 0.5 ? 'music' : 'no_music';
-    }
-
-    // Insert into database with simplified schema
-    db.run(`
-      INSERT INTO assignments
-      (participant_id, groupe_habitude, groupe_experimental, condition_ordre, musique_bloc1, musique_bloc2)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `, [
-      participant_id,
-      'unknown', // Will be determined later from questionnaire
-      condition === 'music' ? 1 : 2,
-      condition === 'music' ? 'musique' : 'silence',
-      condition === 'music' ? 1 : 0,
-      condition === 'music' ? 1 : 0
-    ]);
-
-    saveDatabase();
-
-    console.log(`✅ Condition assignée: ${participant_id} → ${condition}`);
-
-    res.json({
-      participant_id,
-      condition
-    });
-
-  } catch (error) {
-    console.error('❌ Erreur assign-condition:', error);
-    res.status(500).json({ error: 'Erreur serveur' });
-  }
-});
-
-// POST /api/save-data (Save complete experiment data)
+// POST /api/save-data - Sauvegarder UNIQUEMENT les participants qui ont terminé
 app.post('/api/save-data', (req, res) => {
   try {
     const data = req.body;
 
-    if (!data.participantId) {
-      return res.status(400).json({ error: 'participantId requis' });
+    if (!data.participantId || !data.condition) {
+      return res.status(400).json({ error: 'Données incomplètes' });
     }
 
-    // Save to JSON file
+    // Calculer les stats
+    const pvt1 = data.pvtBlock1 || [];
+    const pvt2 = data.pvtBlock2 || [];
+
+    const calculateMean = (arr) => {
+      if (!arr.length) return null;
+      const sum = arr.reduce((acc, trial) => acc + trial.rt, 0);
+      return sum / arr.length;
+    };
+
+    const isMusicFirst = data.condition === 'C2';
+    const rtWithMusic = isMusicFirst ? calculateMean(pvt1) : calculateMean(pvt2);
+    const rtWithoutMusic = isMusicFirst ? calculateMean(pvt2) : calculateMean(pvt1);
+
+    // Extraire données questionnaire
+    const quest = data.questionnaire || {};
+
+    // Insérer dans la base
+    db.run(`
+      INSERT INTO participants
+      (participant_id, age, gender, music_habit, fatigue, stress, is_habitue, condition, rt_with_music, rt_without_music)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `, [
+      data.participantId,
+      quest.age || null,
+      quest.gender || null,
+      quest.musicHabit || null,
+      quest.fatigue || null,
+      quest.stress || null,
+      quest.isHabitue ? 1 : 0,
+      data.condition,
+      rtWithMusic,
+      rtWithoutMusic
+    ]);
+
+    saveDatabase();
+
+    // Sauvegarder JSON complet
     const dataDir = path.join(__dirname, 'data');
     if (!fs.existsSync(dataDir)) {
       fs.mkdirSync(dataDir, { recursive: true });
     }
 
-    const filename = `participant_${data.participantId}_${Date.now()}.json`;
+    const filename = `participant_${data.participantId}.json`;
     const filepath = path.join(dataDir, filename);
-
     fs.writeFileSync(filepath, JSON.stringify(data, null, 2));
 
-    // Mark as completed
-    db.run('UPDATE assignments SET completed = 1 WHERE participant_id = ?', [data.participantId]);
-    saveDatabase();
-
-    console.log(`✅ Données sauvegardées: ${filename}`);
-    res.json({ success: true, filename });
+    console.log(`✅ Participant complété: ${data.participantId}`);
+    res.json({ success: true });
 
   } catch (error) {
     console.error('❌ Erreur save-data:', error);
@@ -290,49 +128,27 @@ app.post('/api/save-data', (req, res) => {
   }
 });
 
-// POST /api/complete
-app.post('/api/complete', (req, res) => {
-  try {
-    const { participant_id } = req.body;
-
-    if (!participant_id) {
-      return res.status(400).json({ error: 'participant_id requis' });
-    }
-
-    db.run('UPDATE assignments SET completed = 1 WHERE participant_id = ?', [participant_id]);
-    saveDatabase();
-
-    console.log(`✅ Participant ${participant_id} marqué comme terminé`);
-    res.json({ success: true });
-
-  } catch (error) {
-    console.error('❌ Erreur completion:', error);
-    res.status(500).json({ error: 'Erreur serveur' });
-  }
-});
-
 // GET /api/stats
 app.get('/api/stats', (req, res) => {
   try {
-    const countersResult = db.exec('SELECT * FROM counters ORDER BY groupe');
-    const totalResult = db.exec('SELECT COUNT(*) as count FROM assignments');
-    const completedResult = db.exec('SELECT COUNT(*) as count FROM assignments WHERE completed = 1');
+    const totalResult = db.exec('SELECT COUNT(*) as count FROM participants');
+    const habitueTrueResult = db.exec('SELECT COUNT(*) FROM participants WHERE is_habitue = 1');
+    const habitueFalseResult = db.exec('SELECT COUNT(*) FROM participants WHERE is_habitue = 0');
+    const c1Result = db.exec('SELECT COUNT(*) FROM participants WHERE condition = "C1"');
+    const c2Result = db.exec('SELECT COUNT(*) FROM participants WHERE condition = "C2"');
 
-    const counters = countersResult[0]?.values || [];
-    const total = totalResult[0]?.values[0]?.[0] || 0;
-    const completed = completedResult[0]?.values[0]?.[0] || 0;
+    const avgRtMusicResult = db.exec('SELECT AVG(rt_with_music) FROM participants WHERE rt_with_music IS NOT NULL');
+    const avgRtSilenceResult = db.exec('SELECT AVG(rt_without_music) FROM participants WHERE rt_without_music IS NOT NULL');
 
-    const stats = {
-      total,
-      completed,
-      distribution: {}
-    };
-
-    counters.forEach(row => {
-      stats.distribution[row[0]] = row[1];
+    res.json({
+      total: totalResult[0]?.values[0]?.[0] || 0,
+      habitues: habitueTrueResult[0]?.values[0]?.[0] || 0,
+      non_habitues: habitueFalseResult[0]?.values[0]?.[0] || 0,
+      condition_c1: c1Result[0]?.values[0]?.[0] || 0,
+      condition_c2: c2Result[0]?.values[0]?.[0] || 0,
+      avg_rt_music: Math.round(avgRtMusicResult[0]?.values[0]?.[0] || 0),
+      avg_rt_silence: Math.round(avgRtSilenceResult[0]?.values[0]?.[0] || 0)
     });
-
-    res.json(stats);
 
   } catch (error) {
     console.error('❌ Erreur stats:', error);
@@ -343,18 +159,18 @@ app.get('/api/stats', (req, res) => {
 // GET /api/export
 app.get('/api/export', (req, res) => {
   try {
-    const result = db.exec('SELECT * FROM assignments ORDER BY assigned_at');
+    const result = db.exec('SELECT * FROM participants ORDER BY completed_at DESC');
 
     if (result.length === 0) {
-      return res.send('id,participant_id,groupe_habitude,groupe_experimental,condition_ordre,musique_bloc1,musique_bloc2,assigned_at,completed\n');
+      return res.send('id,participant_id,age,gender,music_habit,fatigue,stress,is_habitue,condition,rt_with_music,rt_without_music,completed_at\n');
     }
 
-    const headers = ['id', 'participant_id', 'groupe_habitude', 'groupe_experimental', 'condition_ordre', 'musique_bloc1', 'musique_bloc2', 'assigned_at', 'completed'];
+    const headers = ['id', 'participant_id', 'age', 'gender', 'music_habit', 'fatigue', 'stress', 'is_habitue', 'condition', 'rt_with_music', 'rt_without_music', 'completed_at'];
     const rows = result[0].values.map(row => row.join(','));
     const csv = [headers.join(','), ...rows].join('\n');
 
     res.setHeader('Content-Type', 'text/csv');
-    res.setHeader('Content-Disposition', 'attachment; filename=assignments.csv');
+    res.setHeader('Content-Disposition', 'attachment; filename=participants.csv');
     res.send(csv);
 
   } catch (error) {
@@ -363,16 +179,40 @@ app.get('/api/export', (req, res) => {
   }
 });
 
-// GET /
+// POST /api/cleanup - Nettoyer les anciennes données (admin only)
+app.post('/api/cleanup', (req, res) => {
+  try {
+    // Backup avant nettoyage
+    const backupPath = path.join(__dirname, `participants_backup_${Date.now()}.db`);
+    const data = db.export();
+    fs.writeFileSync(backupPath, data);
+
+    // Vider la table (nouveau départ propre)
+    db.run('DELETE FROM participants');
+    saveDatabase();
+
+    console.log(`✅ Base nettoyée (backup: ${backupPath})`);
+    res.json({ success: true, backup: backupPath });
+
+  } catch (error) {
+    console.error('❌ Erreur cleanup:', error);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
+// GET / - Dashboard minimaliste Apple/Notion
 app.get('/', (req, res) => {
   try {
-    const countersResult = db.exec('SELECT * FROM counters ORDER BY groupe');
-    const totalResult = db.exec('SELECT COUNT(*) as count FROM assignments');
-    const completedResult = db.exec('SELECT COUNT(*) as count FROM assignments WHERE completed = 1');
+    const stats = db.exec('SELECT COUNT(*) as total FROM participants')[0]?.values[0]?.[0] || 0;
+    const habitues = db.exec('SELECT COUNT(*) FROM participants WHERE is_habitue = 1')[0]?.values[0]?.[0] || 0;
+    const nonHabitues = db.exec('SELECT COUNT(*) FROM participants WHERE is_habitue = 0')[0]?.values[0]?.[0] || 0;
+    const c1 = db.exec('SELECT COUNT(*) FROM participants WHERE condition = "C1"')[0]?.values[0]?.[0] || 0;
+    const c2 = db.exec('SELECT COUNT(*) FROM participants WHERE condition = "C2"')[0]?.values[0]?.[0] || 0;
 
-    const counters = countersResult[0]?.values || [];
-    const total = totalResult[0]?.values[0]?.[0] || 0;
-    const completed = completedResult[0]?.values[0]?.[0] || 0;
+    const avgRtMusic = db.exec('SELECT AVG(rt_with_music) FROM participants WHERE rt_with_music IS NOT NULL')[0]?.values[0]?.[0] || 0;
+    const avgRtSilence = db.exec('SELECT AVG(rt_without_music) FROM participants WHERE rt_without_music IS NOT NULL')[0]?.values[0]?.[0] || 0;
+
+    const recentParticipants = db.exec('SELECT participant_id, condition, is_habitue, rt_with_music, rt_without_music, completed_at FROM participants ORDER BY completed_at DESC LIMIT 10');
 
     let html = `
 <!doctype html>
@@ -380,133 +220,308 @@ app.get('/', (req, res) => {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <script src="https://cdn.tailwindcss.com"></script>
-  <title>Backend PVT - Dashboard</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
+      background: #fafafa;
+      color: #1c1c1e;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 40px 20px;
+    }
+
+    .header {
+      margin-bottom: 40px;
+    }
+
+    .header h1 {
+      font-size: 32px;
+      font-weight: 600;
+      color: #1c1c1e;
+      margin-bottom: 8px;
+    }
+
+    .header p {
+      color: #86868b;
+      font-size: 15px;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+
+    .stat-card {
+      background: white;
+      border: 1px solid #e8e8ed;
+      border-radius: 16px;
+      padding: 24px;
+      transition: box-shadow 0.2s;
+    }
+
+    .stat-card:hover {
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+
+    .stat-label {
+      font-size: 13px;
+      color: #86868b;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+    }
+
+    .stat-value {
+      font-size: 40px;
+      font-weight: 600;
+      color: #1c1c1e;
+    }
+
+    .stat-secondary {
+      font-size: 14px;
+      color: #6e6e73;
+      margin-top: 4px;
+    }
+
+    .section {
+      background: white;
+      border: 1px solid #e8e8ed;
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+
+    .section-title {
+      font-size: 20px;
+      font-weight: 600;
+      margin-bottom: 20px;
+    }
+
+    .distribution {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+    }
+
+    .dist-item {
+      padding: 16px;
+      background: #f5f5f7;
+      border-radius: 12px;
+    }
+
+    .dist-label {
+      font-size: 13px;
+      color: #6e6e73;
+      margin-bottom: 4px;
+    }
+
+    .dist-value {
+      font-size: 28px;
+      font-weight: 600;
+      color: #1c1c1e;
+    }
+
+    .actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      padding: 12px 24px;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: 500;
+      text-decoration: none;
+      transition: all 0.2s;
+      border: none;
+      cursor: pointer;
+      display: inline-block;
+    }
+
+    .btn-primary {
+      background: #1c1c1e;
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #3a3a3c;
+    }
+
+    .btn-secondary {
+      background: #f5f5f7;
+      color: #1c1c1e;
+      border: 1px solid #e8e8ed;
+    }
+
+    .btn-secondary:hover {
+      background: #e8e8ed;
+    }
+
+    .btn-danger {
+      background: #ff3b30;
+      color: white;
+    }
+
+    .btn-danger:hover {
+      background: #ff453a;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th {
+      text-align: left;
+      font-size: 12px;
+      color: #86868b;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 12px 8px;
+      border-bottom: 1px solid #e8e8ed;
+      font-weight: 500;
+    }
+
+    td {
+      padding: 12px 8px;
+      border-bottom: 1px solid #f5f5f7;
+      font-size: 14px;
+      color: #1c1c1e;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .badge-c1 {
+      background: #f5f5f7;
+      color: #1c1c1e;
+    }
+
+    .badge-c2 {
+      background: #e8e8ed;
+      color: #1c1c1e;
+    }
+
+    .badge-habitue {
+      background: #d2d2d7;
+      color: #1c1c1e;
+    }
+  </style>
+  <title>Backend PVT</title>
 </head>
-<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen p-8">
-  <div class="max-w-6xl mx-auto">
-    <!-- Header -->
-    <div class="bg-white rounded-2xl shadow-xl p-8 mb-8">
-      <div class="flex items-center justify-between">
-        <div>
-          <h1 class="text-4xl font-bold text-gray-800 mb-2">🎯 Backend PVT</h1>
-          <p class="text-gray-600">Équilibrage automatique des conditions expérimentales</p>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Backend PVT</h1>
+      <p>Participants ayant complété l'expérience</p>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">Total</div>
+        <div class="stat-value">${stats}</div>
+        <div class="stat-secondary">participants complétés</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-label">Habitués</div>
+        <div class="stat-value">${habitues}</div>
+        <div class="stat-secondary">Non-habitués : ${nonHabitues}</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-label">Conditions</div>
+        <div class="stat-value">${c1} / ${c2}</div>
+        <div class="stat-secondary">C1 / C2</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-label">RT Moyen</div>
+        <div class="stat-value">${Math.round(avgRtMusic)}ms</div>
+        <div class="stat-secondary">Avec musique</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-label">RT Moyen</div>
+        <div class="stat-value">${Math.round(avgRtSilence)}ms</div>
+        <div class="stat-secondary">Sans musique</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Distribution</div>
+      <div class="distribution">
+        <div class="dist-item">
+          <div class="dist-label">Habitués C1</div>
+          <div class="dist-value">${db.exec('SELECT COUNT(*) FROM participants WHERE is_habitue = 1 AND condition = "C1"')[0]?.values[0]?.[0] || 0}</div>
         </div>
-        <div class="text-right">
-          <div class="text-5xl font-bold text-indigo-600">${total}</div>
-          <div class="text-sm text-gray-600 uppercase tracking-wide">Participants</div>
+        <div class="dist-item">
+          <div class="dist-label">Habitués C2</div>
+          <div class="dist-value">${db.exec('SELECT COUNT(*) FROM participants WHERE is_habitue = 1 AND condition = "C2"')[0]?.values[0]?.[0] || 0}</div>
+        </div>
+        <div class="dist-item">
+          <div class="dist-label">Non-habitués C1</div>
+          <div class="dist-value">${db.exec('SELECT COUNT(*) FROM participants WHERE is_habitue = 0 AND condition = "C1"')[0]?.values[0]?.[0] || 0}</div>
+        </div>
+        <div class="dist-item">
+          <div class="dist-label">Non-habitués C2</div>
+          <div class="dist-value">${db.exec('SELECT COUNT(*) FROM participants WHERE is_habitue = 0 AND condition = "C2"')[0]?.values[0]?.[0] || 0}</div>
         </div>
       </div>
     </div>
 
-    <!-- Stats Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-      <!-- Total -->
-      <div class="bg-white rounded-xl shadow-lg p-6">
-        <div class="flex items-center">
-          <div class="p-3 rounded-full bg-blue-100 text-blue-600 text-2xl mr-4">
-            👥
-          </div>
-          <div>
-            <div class="text-3xl font-bold text-gray-800">${total}</div>
-            <div class="text-sm text-gray-600">Total assignés</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Completed -->
-      <div class="bg-white rounded-xl shadow-lg p-6">
-        <div class="flex items-center">
-          <div class="p-3 rounded-full bg-green-100 text-green-600 text-2xl mr-4">
-            ✅
-          </div>
-          <div>
-            <div class="text-3xl font-bold text-gray-800">${completed}</div>
-            <div class="text-sm text-gray-600">Terminés</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- In Progress -->
-      <div class="bg-white rounded-xl shadow-lg p-6">
-        <div class="flex items-center">
-          <div class="p-3 rounded-full bg-yellow-100 text-yellow-600 text-2xl mr-4">
-            ⏳
-          </div>
-          <div>
-            <div class="text-3xl font-bold text-gray-800">${total - completed}</div>
-            <div class="text-sm text-gray-600">En cours</div>
-          </div>
-        </div>
-      </div>
+    ${recentParticipants.length > 0 && recentParticipants[0].values.length > 0 ? `
+    <div class="section">
+      <div class="section-title">10 derniers participants</div>
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Condition</th>
+            <th>Profil</th>
+            <th>RT Musique</th>
+            <th>RT Silence</th>
+            <th>Date</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${recentParticipants[0].values.map(row => `
+            <tr>
+              <td><code>${row[0].substring(0, 8)}...</code></td>
+              <td><span class="badge badge-${row[1].toLowerCase()}">${row[1]}</span></td>
+              <td><span class="badge ${row[2] ? 'badge-habitue' : ''}">${row[2] ? 'Habitué' : 'Non-habitué'}</span></td>
+              <td>${row[3] ? Math.round(row[3]) + 'ms' : '-'}</td>
+              <td>${row[4] ? Math.round(row[4]) + 'ms' : '-'}</td>
+              <td>${new Date(row[5]).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' })}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
     </div>
+    ` : ''}
 
-    <!-- Distribution Table -->
-    <div class="bg-white rounded-2xl shadow-xl p-8 mb-8">
-      <h2 class="text-2xl font-bold text-gray-800 mb-6">📊 Distribution par groupe</h2>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        ${counters.map(row => {
-          const [groupe, count] = row;
-          const isHabitue = groupe.startsWith('habitue');
-          const isC1 = groupe.endsWith('C1');
-          const bgColor = isHabitue ? 'bg-indigo-50' : 'bg-purple-50';
-          const textColor = isHabitue ? 'text-indigo-600' : 'text-purple-600';
-          const icon = isHabitue ? '🎵' : '🔇';
-          const condition = isC1 ? 'M→S' : 'S→M';
-
-          return `
-          <div class="${bgColor} rounded-xl p-6 border-2 ${isHabitue ? 'border-indigo-200' : 'border-purple-200'}">
-            <div class="flex items-center justify-between">
-              <div>
-                <div class="text-sm font-semibold ${textColor} uppercase tracking-wide mb-1">
-                  ${groupe.replace('_', ' → ')}
-                </div>
-                <div class="text-gray-600 text-sm">${icon} ${condition}</div>
-              </div>
-              <div class="text-4xl font-bold ${textColor}">${count}</div>
-            </div>
-            <div class="mt-4 bg-white rounded-lg h-2 overflow-hidden">
-              <div class="h-full ${isHabitue ? 'bg-indigo-500' : 'bg-purple-500'}"
-                   style="width: ${total > 0 ? (count / total * 100) : 0}%"></div>
-            </div>
-          </div>
-          `;
-        }).join('')}
-      </div>
-    </div>
-
-    <!-- Actions -->
-    <div class="flex gap-4">
-      <a href="/api/export"
-         class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-4 px-6 rounded-xl shadow-lg transition duration-200 text-center">
-        📥 Exporter CSV
-      </a>
-      <a href="/api/stats"
-         class="flex-1 bg-gray-600 hover:bg-gray-700 text-white font-semibold py-4 px-6 rounded-xl shadow-lg transition duration-200 text-center">
-        📊 JSON Stats
-      </a>
-      <button onclick="location.reload()"
-              class="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-4 px-6 rounded-xl shadow-lg transition duration-200">
-        🔄 Actualiser
-      </button>
-    </div>
-
-    <!-- API Info -->
-    <div class="mt-8 bg-gray-800 rounded-xl p-6 text-white">
-      <h3 class="font-bold text-lg mb-3">🔌 Endpoints API</h3>
-      <div class="space-y-2 font-mono text-sm">
-        <div><span class="text-green-400">POST</span> /api/assign - Assigner une condition</div>
-        <div><span class="text-blue-400">POST</span> /api/complete - Marquer comme terminé</div>
-        <div><span class="text-yellow-400">GET</span> /api/stats - Statistiques JSON</div>
-        <div><span class="text-purple-400">GET</span> /api/export - Export CSV</div>
-      </div>
+    <div class="actions">
+      <a href="/api/export" class="btn btn-primary">Exporter CSV</a>
+      <a href="/api/stats" class="btn btn-secondary">Statistiques JSON</a>
+      <button onclick="location.reload()" class="btn btn-secondary">Actualiser</button>
+      <button onclick="if(confirm('Supprimer TOUS les participants ? Un backup sera créé.')) fetch('/api/cleanup', {method:'POST'}).then(r=>r.json()).then(()=>location.reload())" class="btn btn-danger">Nettoyer</button>
     </div>
   </div>
-
-  <script>
-    // Auto-refresh toutes les 30 secondes
-    setTimeout(() => location.reload(), 30000);
-  </script>
 </body>
 </html>
     `;
@@ -522,9 +537,8 @@ app.get('/', (req, res) => {
 // Démarrer le serveur
 initDatabase().then(() => {
   app.listen(PORT, () => {
-    console.log(`🚀 Serveur backend PVT démarré sur le port ${PORT}`);
+    console.log(`🚀 Serveur backend PVT sur le port ${PORT}`);
     console.log(`📊 Dashboard: http://localhost:${PORT}/`);
-    console.log(`🔌 API: http://localhost:${PORT}/api/assign`);
   });
 }).catch(err => {
   console.error('❌ Erreur initialisation DB:', err);
