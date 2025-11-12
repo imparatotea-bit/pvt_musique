@@ -20,22 +20,7 @@ export default {
             800: '#2c2c2e',
             900: '#1c1c1e',
           },
-          blue: {
-            DEFAULT: '#007AFF',
-            light: '#5AC8FA',
-          },
-          purple: {
-            DEFAULT: '#AF52DE',
-            light: '#BF5AF2',
-          },
-          pink: {
-            DEFAULT: '#FF2D55',
-            light: '#FF375F',
-          },
         },
-      },
-      backgroundImage: {
-        'gradient-soft': 'linear-gradient(135deg, #fafafa 0%, #f5f5f7 50%, #fafafa 100%)',
       },
       fontFamily: {
         sans: ['-apple-system', 'BlinkMacSystemFont', 'SF Pro Display', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif'],

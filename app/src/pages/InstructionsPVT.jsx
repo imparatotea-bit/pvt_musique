@@ -16,23 +16,23 @@ export default function InstructionsPVT() {
             Dans cette tâche, vous allez devoir réagir le plus rapidement possible à l'apparition d'un stimulus.
           </p>
 
-          <div className="bg-notion-purple-bg p-6 rounded-2xl border-2 border-notion-purple-light">
-            <p className="font-semibold text-notion-purple mb-2">
+          <div className="bg-apple-gray-100 p-6 rounded-2xl border-2 border-apple-gray-200">
+            <p className="font-semibold text-apple-gray-900 mb-2">
               Comment répondre :
             </p>
             <ul className="list-disc list-inside space-y-2">
               <li>Fixez le centre de l'écran</li>
               <li>Un nombre apparaîtra après un délai aléatoire</li>
-              <li>Dès que le nombre apparaît, appuyez sur la <kbd className="px-3 py-1 bg-white rounded-lg font-mono text-notion-purple border-2 border-notion-purple">BARRE ESPACE</kbd></li>
+              <li>Dès que le nombre apparaît, appuyez sur la <kbd className="px-3 py-1 bg-white rounded-lg font-mono text-apple-gray-900 border-2 border-apple-gray-900">BARRE ESPACE</kbd></li>
               <li>Soyez le plus rapide possible</li>
             </ul>
           </div>
 
-          <div className="bg-red-50 p-6 rounded-2xl border-2 border-red-200">
-            <p className="font-semibold text-red-600 mb-2">
-              ⚠️ Important :
+          <div className="bg-apple-gray-100 p-6 rounded-2xl border-2 border-apple-gray-200">
+            <p className="font-semibold text-apple-gray-600 mb-2">
+              Important :
             </p>
-            <ul className="list-disc list-inside space-y-2 text-red-700">
+            <ul className="list-disc list-inside space-y-2 text-apple-gray-600">
               <li>N'appuyez PAS avant que le nombre n'apparaisse</li>
               <li>Ne maintenez PAS la barre espace enfoncée</li>
               <li>Attendez bien de voir le nombre avant de répondre</li>

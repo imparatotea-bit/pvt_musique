@@ -34,7 +34,7 @@ export default function Slider({
         />
         {showValue && (
           <div className="flex justify-center">
-            <div className="text-7xl font-light text-apple-blue tabular-nums">
+            <div className="text-7xl font-light text-apple-gray-900 tabular-nums">
               {value}
             </div>
           </div>

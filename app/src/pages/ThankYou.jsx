@@ -26,10 +26,6 @@ export default function ThankYou() {
   return (
     <Layout>
       <div className="card max-w-2xl mx-auto text-center space-y-10 animate-fade-in">
-        <div className="text-7xl">
-          🎉
-        </div>
-
         <h1 className="text-4xl font-semibold text-apple-gray-900">
           Merci d'avoir participé !
         </h1>
@@ -43,11 +39,11 @@ export default function ThankYou() {
           </p>
         </div>
 
-        <div className="bg-apple-blue/5 p-10 rounded-3xl border border-apple-blue/20">
+        <div className="bg-apple-gray-100 p-10 rounded-3xl border border-apple-gray-200">
           <p className="text-sm text-apple-gray-500 mb-3 font-medium uppercase tracking-wide">
             Votre code de complétion
           </p>
-          <p className="text-4xl font-mono font-semibold text-apple-blue tracking-wider">
+          <p className="text-4xl font-mono font-semibold text-apple-gray-900 tracking-wider">
             {completionCode}
           </p>
           <p className="text-sm text-apple-gray-500 mt-4">
@@ -58,25 +54,25 @@ export default function ThankYou() {
         {exportStatus === 'pending' && (
           <div className="bg-apple-gray-100 p-5 rounded-2xl">
             <p className="text-apple-gray-600 font-medium">
-              ⏳ Envoi des données en cours...
+              Envoi des données en cours...
             </p>
           </div>
         )}
 
         {exportStatus === 'success' && (
-          <div className="bg-green-50 p-5 rounded-2xl border border-green-200">
-            <p className="text-green-700 font-medium">
-              ✓ Données enregistrées avec succès
+          <div className="bg-apple-gray-100 p-5 rounded-2xl border border-apple-gray-200">
+            <p className="text-apple-gray-900 font-medium">
+              Données enregistrées avec succès
             </p>
           </div>
         )}
 
         {exportStatus === 'error' && (
-          <div className="bg-red-50 p-5 rounded-2xl border border-red-200">
-            <p className="text-red-700 font-medium">
-              ⚠️ Erreur lors de l'envoi au serveur
+          <div className="bg-apple-gray-100 p-5 rounded-2xl border border-apple-gray-200">
+            <p className="text-apple-gray-600 font-medium">
+              Erreur lors de l'envoi au serveur
             </p>
-            <p className="text-sm text-red-600 mt-2">
+            <p className="text-sm text-apple-gray-600 mt-2">
               Veuillez contacter l'expérimentateur avec votre code de complétion.
             </p>
           </div>

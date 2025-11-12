@@ -38,7 +38,7 @@ export default function StartMusic() {
       // Démarrer l'oscillateur
       oscillatorRef.current.start();
 
-      console.log('✅ Audio de test généré (ton 220Hz)');
+      console.log('Audio de test genere (ton 220Hz)');
     } catch (err) {
       console.error('Erreur génération audio:', err);
     }

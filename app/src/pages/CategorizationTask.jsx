@@ -133,9 +133,6 @@ export default function CategorizationTask({ series }) {
               {/* Placeholder for image - in production would be <img src={...} /> */}
               <div className="w-80 h-80 bg-apple-gray-100 rounded-3xl flex items-center justify-center shadow-soft-lg">
                 <div className="text-center">
-                  <p className="text-6xl mb-4">
-                    {currentImage.category === 'natural' ? '🌿' : '🏭'}
-                  </p>
                   <p className="text-base text-apple-gray-600">
                     {currentImage.name}
                   </p>
@@ -151,24 +148,24 @@ export default function CategorizationTask({ series }) {
                   onClick={() => handleResponse('natural')}
                   disabled={buttonsDisabled}
                   className="px-10 py-5 bg-white border-2 border-apple-gray-200 rounded-2xl
-                             hover:border-apple-blue hover:bg-apple-blue hover:text-white
+                             hover:border-apple-gray-900 hover:bg-apple-gray-900 hover:text-white
                              transition-all duration-200 shadow-soft hover:shadow-soft-lg
                              disabled:opacity-50 disabled:cursor-not-allowed
                              text-lg font-medium text-apple-gray-900"
                 >
-                  🌿 Naturel
+                  Naturel
                 </button>
 
                 <button
                   onClick={() => handleResponse('artificial')}
                   disabled={buttonsDisabled}
                   className="px-10 py-5 bg-white border-2 border-apple-gray-200 rounded-2xl
-                             hover:border-apple-purple hover:bg-apple-purple hover:text-white
+                             hover:border-apple-gray-900 hover:bg-apple-gray-900 hover:text-white
                              transition-all duration-200 shadow-soft hover:shadow-soft-lg
                              disabled:opacity-50 disabled:cursor-not-allowed
                              text-lg font-medium text-apple-gray-900"
                 >
-                  🏭 Artificiel
+                  Artificiel
                 </button>
               </div>
             </div>
@@ -176,8 +173,8 @@ export default function CategorizationTask({ series }) {
 
           {showFeedback && feedbackData && (
             <div className="text-center space-y-6 animate-scale-in">
-              <div className={`text-7xl ${feedbackData.isCorrect ? 'text-green-500' : 'text-red-500'}`}>
-                {feedbackData.isCorrect ? '✓' : '✗'}
+              <div className={`text-4xl font-medium ${feedbackData.isCorrect ? 'text-apple-gray-900' : 'text-apple-gray-600'}`}>
+                {feedbackData.isCorrect ? 'Correct' : 'Incorrect'}
               </div>
               <p className="text-4xl font-light text-apple-gray-900">
                 {feedbackData.rt} <span className="text-xl text-apple-gray-500">ms</span>

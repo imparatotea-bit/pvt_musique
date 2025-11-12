@@ -81,7 +81,7 @@ export default function PVTTask({ block }) {
     setFeedback({
       message: 'Réponse enregistrée',
       rt: Math.round(rt),
-      color: 'text-apple-blue',
+      color: 'text-apple-gray-900',
     });
     setTrialState('feedback');
 
@@ -116,13 +116,13 @@ export default function PVTTask({ block }) {
           e.preventDefault();
           e.stopPropagation();
           e.stopImmediatePropagation();
-          console.warn('⚠️ APPUI CONTINU BLOQUÉ');
+          console.warn('APPUI CONTINU BLOQUE');
 
           if (trialState === 'stimulus') {
             stopTimer();
             setFeedback({
               message: 'Ne maintenez pas la touche enfoncée',
-              color: 'text-red-500',
+              color: 'text-apple-gray-600',
             });
           }
           return false;
@@ -134,13 +134,13 @@ export default function PVTTask({ block }) {
           e.preventDefault();
           e.stopPropagation();
           e.stopImmediatePropagation();
-          console.warn('⚠️ APPUI TROP RAPIDE BLOQUÉ');
+          console.warn('APPUI TROP RAPIDE BLOQUE');
 
           if (trialState === 'stimulus') {
             stopTimer();
             setFeedback({
               message: 'Appuis trop rapides détectés',
-              color: 'text-red-500',
+              color: 'text-apple-gray-600',
             });
           }
           return false;
@@ -151,11 +151,11 @@ export default function PVTTask({ block }) {
           e.preventDefault();
           e.stopPropagation();
           e.stopImmediatePropagation();
-          console.warn('⚠️ ANTICIPATION BLOQUÉE');
+          console.warn('ANTICIPATION BLOQUEE');
 
           setFeedback({
             message: 'Attendez que le timer apparaisse !',
-            color: 'text-red-500',
+            color: 'text-apple-gray-600',
           });
 
           // Record as false start
@@ -251,7 +251,7 @@ export default function PVTTask({ block }) {
         stopTimer();
         setFeedback({
           message: 'Trop lent !',
-          color: 'text-orange-500',
+          color: 'text-apple-gray-600',
         });
 
         const trialData = {

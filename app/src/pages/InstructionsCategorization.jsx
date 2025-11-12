@@ -16,8 +16,8 @@ export default function InstructionsCategorization() {
             Dans cette tâche, vous allez voir des images apparaître à l'écran.
           </p>
 
-          <div className="bg-notion-blue-bg p-6 rounded-2xl border-2 border-notion-blue-light">
-            <p className="font-semibold text-notion-blue mb-3">
+          <div className="bg-apple-gray-100 p-6 rounded-2xl border-2 border-apple-gray-200">
+            <p className="font-semibold text-apple-gray-900 mb-3">
               Votre tâche :
             </p>
             <p className="mb-4">
@@ -25,18 +25,18 @@ export default function InstructionsCategorization() {
             </p>
             <ul className="list-disc list-inside space-y-2">
               <li>
-                <kbd className="px-3 py-1 bg-white rounded-lg font-mono text-notion-blue border-2 border-notion-blue">F</kbd>
+                <kbd className="px-3 py-1 bg-white rounded-lg font-mono text-apple-gray-900 border-2 border-apple-gray-900">F</kbd>
                 {' '}pour <strong>Naturel</strong> (ex: arbre, animal, fleur)
               </li>
               <li>
-                <kbd className="px-3 py-1 bg-white rounded-lg font-mono text-notion-blue border-2 border-notion-blue">J</kbd>
+                <kbd className="px-3 py-1 bg-white rounded-lg font-mono text-apple-gray-900 border-2 border-apple-gray-900">J</kbd>
                 {' '}pour <strong>Artificiel</strong> (ex: voiture, ordinateur, bâtiment)
               </li>
             </ul>
           </div>
 
-          <div className="bg-notion-purple-bg p-6 rounded-2xl border-2 border-notion-purple-light">
-            <p className="font-semibold text-notion-purple mb-2">
+          <div className="bg-apple-gray-100 p-6 rounded-2xl border-2 border-apple-gray-200">
+            <p className="font-semibold text-apple-gray-900 mb-2">
               Conseils :
             </p>
             <ul className="list-disc list-inside space-y-2">
