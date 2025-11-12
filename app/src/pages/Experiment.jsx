@@ -3,7 +3,7 @@ import { useExperiment } from '../contexts/ExperimentContext';
 import { useAudio } from '../contexts/AudioContext';
 import Layout from '../components/Layout';
 import Slider from '../components/Slider';
-import { imageStimuli } from '../data/imageStimuli';
+import { localImages } from '../data/localImages';
 import { BrainCircuit } from 'lucide-react';
 
 export default function Experiment() {
@@ -25,6 +25,7 @@ export default function Experiment() {
   const [catImages, setCatImages] = useState([]);
   const [catCurrentIndex, setCatCurrentIndex] = useState(0);
   const [catStartTime, setCatStartTime] = useState(0);
+  const [allShuffledImages, setAllShuffledImages] = useState([]);
 
   // PVT state
   const [pvtState, setPvtState] = useState('ready');
@@ -38,15 +39,25 @@ export default function Experiment() {
   // Thank you state
   const [exportStatus, setExportStatus] = useState('pending');
 
-  // Shuffle images
-  const shuffleImages = useCallback(() => {
-    const shuffled = [...imageStimuli];
+  // Shuffle all 42 images once at the start (21 for cat1, 21 for cat2)
+  const initializeImages = useCallback(() => {
+    const shuffled = [...localImages];
     for (let i = shuffled.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
     }
-    return shuffled;
+    setAllShuffledImages(shuffled);
+    console.log('🖼️ Images randomisées: 42 images divisées en 2 groupes de 21');
   }, []);
+
+  // Get images for current categorization task
+  const getCatImages = useCallback((taskNumber) => {
+    if (taskNumber === 1) {
+      return allShuffledImages.slice(0, 21); // First 21 images
+    } else {
+      return allShuffledImages.slice(21, 42); // Last 21 images
+    }
+  }, [allShuffledImages]);
 
   // Control music based on step and condition
   useEffect(() => {
@@ -87,14 +98,17 @@ export default function Experiment() {
   const handleAudioStart = async () => {
     try {
       // Load music file and wait for it to be ready
-      await loadTrack('/static/musique.mp3');
+      await loadTrack('/musique/musique.mp3');
       console.log('✅ Audio complètement chargé, prêt à être utilisé');
       setAudioReady(true);
+      // Initialize images once at the start
+      initializeImages();
       setStep('welcome');
     } catch (err) {
       console.error('❌ Impossible de charger l\'audio:', err);
       // Continuer quand même sans audio
       setAudioReady(false);
+      initializeImages();
       setStep('welcome');
     }
   };
@@ -144,8 +158,8 @@ export default function Experiment() {
         timestamp: new Date().toISOString(),
       });
 
-      // Go to first categorization instructions
-      setCatImages(shuffleImages());
+      // Go to first categorization instructions (first 21 images)
+      setCatImages(getCatImages(1));
       setCatCurrentIndex(0);
       setStep('inst_cat1');
 
@@ -168,7 +182,7 @@ export default function Experiment() {
         timestamp: new Date().toISOString(),
       });
 
-      setCatImages(shuffleImages());
+      setCatImages(getCatImages(1));
       setCatCurrentIndex(0);
       setStep('inst_cat1');
     }
@@ -181,7 +195,7 @@ export default function Experiment() {
 
     addTrialData(`categorization${currentSeries}`, {
       trial: catCurrentIndex + 1,
-      image: catImages[catCurrentIndex]?.name,
+      image: catImages[catCurrentIndex]?.filename,
       response,
       rt,
       timestamp: new Date().toISOString(),
@@ -209,9 +223,9 @@ export default function Experiment() {
     if (step === 'cat1' || step === 'cat2') {
       const handleKeyPress = (e) => {
         if (e.key === 'f' || e.key === 'F') {
-          handleCatResponse('natural');
+          handleCatResponse('interieur');
         } else if (e.key === 'j' || e.key === 'J') {
-          handleCatResponse('artificial');
+          handleCatResponse('exterieur');
         }
       };
 
@@ -281,7 +295,7 @@ export default function Experiment() {
     if (elapsedTime >= PVT_DURATION_MS || pvtCurrentTrial + 1 >= 60) {
       // Block complete
       if (step === 'pvt1') {
-        setCatImages(shuffleImages());
+        setCatImages(getCatImages(2)); // Second 21 images for cat2
         setCatCurrentIndex(0);
         setStep('inst_cat2');
       } else {
@@ -296,7 +310,7 @@ export default function Experiment() {
       setPvtTimer('0000');
       startPVTTrial();
     }
-  }, [pvtState, pvtStartTime, pvtCurrentTrial, step, pvtBlockStartTime, pvtLastKeyPressTime, addTrialData, startPVTTrial, exportData, shuffleImages]);
+  }, [pvtState, pvtStartTime, pvtCurrentTrial, step, pvtBlockStartTime, pvtLastKeyPressTime, addTrialData, startPVTTrial, exportData, getCatImages]);
 
   useEffect(() => {
     if ((step === 'pvt1' || step === 'pvt2') && pvtState === 'ready') {
@@ -372,7 +386,7 @@ export default function Experiment() {
 
         if (step === 'pvt1') {
           console.log('⚠️ [DEV MODE] → Passage à inst_cat2');
-          setCatImages(shuffleImages());
+          setCatImages(getCatImages(2));
           setCatCurrentIndex(0);
           setStep('inst_cat2');
         } else {
@@ -396,7 +410,7 @@ export default function Experiment() {
 
     window.addEventListener('keydown', handleDevSkip);
     return () => window.removeEventListener('keydown', handleDevSkip);
-  }, [step, exportData, shuffleImages, updateData]);
+  }, [step, exportData, getCatImages, updateData]);
 
   // Calculate stats for thank you page (memoized to avoid recalculating 4 times)
   const stats = useMemo(() => {
