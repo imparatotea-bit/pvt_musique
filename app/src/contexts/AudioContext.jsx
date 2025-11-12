@@ -15,8 +15,13 @@ export const AudioProvider = ({ children }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTrack, setCurrentTrack] = useState(null);
 
+  // Version check - IMPORTANT: Si vous voyez "VERSION: v2.0" dans la console, c'est bon
+  console.log('🔧 AudioContext VERSION: v2.0 - Async Loading');
+
   const loadTrack = useCallback((src) => {
     return new Promise((resolve, reject) => {
+      console.log('🎵 [v2.0] Début chargement audio:', src);
+
       if (audioRef.current) {
         audioRef.current.pause();
         audioRef.current = null;
@@ -29,12 +34,12 @@ export const AudioProvider = ({ children }) => {
 
       // Attendre que l'audio soit prêt
       audio.addEventListener('canplaythrough', () => {
-        console.log('✅ Audio chargé et prêt:', src);
+        console.log('✅ [v2.0] Audio chargé et prêt:', src);
         resolve();
       }, { once: true });
 
       audio.addEventListener('error', (e) => {
-        console.error('❌ Erreur chargement audio:', e);
+        console.error('❌ [v2.0] Erreur chargement audio:', e);
         reject(e);
       });
 
