@@ -43,6 +43,15 @@ export const ExperimentProvider = ({ children }) => {
       ...data,
     };
 
+    console.log('📤 Export données vers backend:', {
+      participantId: exportObject.participantId,
+      condition: exportObject.condition,
+      pvtBlock1Length: exportObject.pvtBlock1?.length || 0,
+      pvtBlock2Length: exportObject.pvtBlock2?.length || 0,
+      pvtBlock1Sample: exportObject.pvtBlock1?.slice(0, 2) || [],
+      pvtBlock2Sample: exportObject.pvtBlock2?.slice(0, 2) || [],
+    });
+
     // Send to server only (no local CSV download)
     return fetch('/api/save-data', {
       method: 'POST',
