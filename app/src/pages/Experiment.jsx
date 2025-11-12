@@ -3,20 +3,7 @@ import { useExperiment } from '../contexts/ExperimentContext';
 import { useAudio } from '../contexts/AudioContext';
 import Layout from '../components/Layout';
 import Slider from '../components/Slider';
-
-// Image stimuli for categorization
-const imageStimuli = [
-  { id: 1, name: 'Arbre', category: 'natural' },
-  { id: 2, name: 'Voiture', category: 'artificial' },
-  { id: 3, name: 'Fleur', category: 'natural' },
-  { id: 4, name: 'Immeuble', category: 'artificial' },
-  { id: 5, name: 'Oiseau', category: 'natural' },
-  { id: 6, name: 'Ordinateur', category: 'artificial' },
-  { id: 7, name: 'Montagne', category: 'natural' },
-  { id: 8, name: 'Téléphone', category: 'artificial' },
-  { id: 9, name: 'Chat', category: 'natural' },
-  { id: 10, name: 'Chaise', category: 'artificial' },
-];
+import { imageStimuli } from '../data/imageStimuli';
 
 export default function Experiment() {
   const { updateData, addTrialData, setCondition, setParticipantId, condition, exportData, participantId, data } = useExperiment();
@@ -62,18 +49,25 @@ export default function Experiment() {
 
   // Control music based on step and condition
   useEffect(() => {
-    if (!condition || !audioReady) return;
+    if (!condition || !audioReady) {
+      console.log('🎵 Musique: condition non remplie (condition:', condition, 'audioReady:', audioReady, ')');
+      return;
+    }
 
     const shouldPlayMusic =
       (condition === 'C1' && (step === 'inst_cat2' || step === 'cat2' || step === 'inst_pvt2' || step === 'pvt2')) ||
       (condition === 'C2' && (step === 'inst_cat1' || step === 'cat1' || step === 'inst_pvt1' || step === 'pvt1'));
 
+    console.log(`🎵 Musique: step="${step}", condition="${condition}", shouldPlay=${shouldPlayMusic}`);
+
     if (shouldPlayMusic) {
+      console.log('▶️ Démarrage musique');
       play();
     } else {
+      console.log('⏸️ Arrêt musique');
       pause();
     }
-  }, [step, condition, audioReady, play, pause]);
+  }, [step, condition, audioReady]);
 
   // === START (Audio Authorization) ===
   const handleAudioStart = async () => {
@@ -446,9 +440,14 @@ export default function Experiment() {
         {/* CATEGORIZATION */}
         {(step === 'cat1' || step === 'cat2') && catImages[catCurrentIndex] && (
           <div className="text-center w-full">
-            <div className="mb-16">
-              <div className="text-7xl md:text-8xl font-bold text-apple-gray-900">
-                {catImages[catCurrentIndex].name}
+            <div className="mb-16 flex justify-center">
+              <div className="relative rounded-3xl overflow-hidden shadow-soft-xl border border-apple-gray-200">
+                <img
+                  src={catImages[catCurrentIndex].url}
+                  alt={catImages[catCurrentIndex].name}
+                  className="w-96 h-96 object-cover"
+                  loading="eager"
+                />
               </div>
             </div>
 
