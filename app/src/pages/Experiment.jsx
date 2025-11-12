@@ -321,7 +321,7 @@ export default function Experiment() {
   }, [step, pvtState, startPVTTrial]);
 
   useEffect(() => {
-    if (pvtState === 'stimulus') {
+    if (pvtState === 'stimulus' && (step === 'pvt1' || step === 'pvt2')) {
       const handleSpace = (e) => {
         if (e.code === 'Space') {
           e.preventDefault();
@@ -332,7 +332,7 @@ export default function Experiment() {
       window.addEventListener('keydown', handleSpace);
       return () => window.removeEventListener('keydown', handleSpace);
     }
-  }, [pvtState, handlePVTResponse]);
+  }, [pvtState, step, handlePVTResponse]);
 
   // Cleanup PVT timer
   useEffect(() => {
