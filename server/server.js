@@ -220,306 +220,138 @@ app.get('/', (req, res) => {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
-      background: #fafafa;
-      color: #1c1c1e;
-      line-height: 1.5;
-      -webkit-font-smoothing: antialiased;
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <style type="text/tailwindcss">
+    @theme {
+      --color-apple-gray-50: #fafafa;
+      --color-apple-gray-100: #f5f5f7;
+      --color-apple-gray-200: #e8e8ed;
+      --color-apple-gray-300: #d2d2d7;
+      --color-apple-gray-400: #86868b;
+      --color-apple-gray-500: #6e6e73;
+      --color-apple-gray-600: #515154;
+      --color-apple-gray-700: #3a3a3c;
+      --color-apple-gray-800: #2c2c2e;
+      --color-apple-gray-900: #1c1c1e;
     }
 
-    .container {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 40px 20px;
-    }
-
-    .header {
-      margin-bottom: 40px;
-    }
-
-    .header h1 {
-      font-size: 32px;
-      font-weight: 600;
-      color: #1c1c1e;
-      margin-bottom: 8px;
-    }
-
-    .header p {
-      color: #86868b;
-      font-size: 15px;
-    }
-
-    .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap: 16px;
-      margin-bottom: 32px;
-    }
-
-    .stat-card {
-      background: white;
-      border: 1px solid #e8e8ed;
-      border-radius: 16px;
-      padding: 24px;
-      transition: box-shadow 0.2s;
-    }
-
-    .stat-card:hover {
-      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-    }
-
-    .stat-label {
-      font-size: 13px;
-      color: #86868b;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      margin-bottom: 8px;
-    }
-
-    .stat-value {
-      font-size: 40px;
-      font-weight: 600;
-      color: #1c1c1e;
-    }
-
-    .stat-secondary {
-      font-size: 14px;
-      color: #6e6e73;
-      margin-top: 4px;
-    }
-
-    .section {
-      background: white;
-      border: 1px solid #e8e8ed;
-      border-radius: 16px;
-      padding: 24px;
-      margin-bottom: 24px;
-    }
-
-    .section-title {
-      font-size: 20px;
-      font-weight: 600;
-      margin-bottom: 20px;
-    }
-
-    .distribution {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 16px;
-    }
-
-    .dist-item {
-      padding: 16px;
-      background: #f5f5f7;
-      border-radius: 12px;
-    }
-
-    .dist-label {
-      font-size: 13px;
-      color: #6e6e73;
-      margin-bottom: 4px;
-    }
-
-    .dist-value {
-      font-size: 28px;
-      font-weight: 600;
-      color: #1c1c1e;
-    }
-
-    .actions {
-      display: flex;
-      gap: 12px;
-      flex-wrap: wrap;
-    }
-
-    .btn {
-      padding: 12px 24px;
-      border-radius: 12px;
-      font-size: 15px;
-      font-weight: 500;
-      text-decoration: none;
-      transition: all 0.2s;
-      border: none;
-      cursor: pointer;
-      display: inline-block;
-    }
-
-    .btn-primary {
-      background: #1c1c1e;
-      color: white;
-    }
-
-    .btn-primary:hover {
-      background: #3a3a3c;
-    }
-
-    .btn-secondary {
-      background: #f5f5f7;
-      color: #1c1c1e;
-      border: 1px solid #e8e8ed;
-    }
-
-    .btn-secondary:hover {
-      background: #e8e8ed;
-    }
-
-    .btn-danger {
-      background: #ff3b30;
-      color: white;
-    }
-
-    .btn-danger:hover {
-      background: #ff453a;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-    }
-
-    th {
-      text-align: left;
-      font-size: 12px;
-      color: #86868b;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      padding: 12px 8px;
-      border-bottom: 1px solid #e8e8ed;
-      font-weight: 500;
-    }
-
-    td {
-      padding: 12px 8px;
-      border-bottom: 1px solid #f5f5f7;
-      font-size: 14px;
-      color: #1c1c1e;
-    }
-
-    .badge {
-      display: inline-block;
-      padding: 4px 8px;
-      border-radius: 6px;
-      font-size: 12px;
-      font-weight: 500;
-    }
-
-    .badge-c1 {
-      background: #f5f5f7;
-      color: #1c1c1e;
-    }
-
-    .badge-c2 {
-      background: #e8e8ed;
-      color: #1c1c1e;
-    }
-
-    .badge-habitue {
-      background: #d2d2d7;
-      color: #1c1c1e;
+    @layer base {
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
+        -webkit-font-smoothing: antialiased;
+      }
     }
   </style>
   <title>Backend PVT</title>
 </head>
-<body>
-  <div class="container">
-    <div class="header">
-      <h1>Backend PVT</h1>
-      <p>Participants ayant complété l'expérience</p>
+<body class="bg-apple-gray-50 text-apple-gray-900 antialiased">
+  <div class="max-w-7xl mx-auto px-5 py-10">
+    <!-- Header -->
+    <div class="mb-10">
+      <h1 class="text-4xl font-semibold text-apple-gray-900 mb-2">Backend PVT</h1>
+      <p class="text-apple-gray-400">Participants ayant complété l'expérience</p>
     </div>
 
-    <div class="stats-grid">
-      <div class="stat-card">
-        <div class="stat-label">Total</div>
-        <div class="stat-value">${stats}</div>
-        <div class="stat-secondary">participants complétés</div>
+    <!-- Stats Grid -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+      <!-- Total -->
+      <div class="bg-white border border-apple-gray-200 rounded-2xl p-6 hover:shadow-lg transition-shadow duration-200">
+        <div class="text-xs uppercase tracking-wider text-apple-gray-400 mb-2">Total</div>
+        <div class="text-5xl font-semibold text-apple-gray-900">${stats}</div>
+        <div class="text-sm text-apple-gray-500 mt-1">participants complétés</div>
       </div>
 
-      <div class="stat-card">
-        <div class="stat-label">Habitués</div>
-        <div class="stat-value">${habitues}</div>
-        <div class="stat-secondary">Non-habitués : ${nonHabitues}</div>
+      <!-- Habitués -->
+      <div class="bg-white border border-apple-gray-200 rounded-2xl p-6 hover:shadow-lg transition-shadow duration-200">
+        <div class="text-xs uppercase tracking-wider text-apple-gray-400 mb-2">Habitués</div>
+        <div class="text-5xl font-semibold text-apple-gray-900">${habitues}</div>
+        <div class="text-sm text-apple-gray-500 mt-1">Non-habitués : ${nonHabitues}</div>
       </div>
 
-      <div class="stat-card">
-        <div class="stat-label">Conditions</div>
-        <div class="stat-value">${c1} / ${c2}</div>
-        <div class="stat-secondary">C1 / C2</div>
+      <!-- Conditions -->
+      <div class="bg-white border border-apple-gray-200 rounded-2xl p-6 hover:shadow-lg transition-shadow duration-200">
+        <div class="text-xs uppercase tracking-wider text-apple-gray-400 mb-2">Conditions</div>
+        <div class="text-5xl font-semibold text-apple-gray-900">${c1} / ${c2}</div>
+        <div class="text-sm text-apple-gray-500 mt-1">C1 / C2</div>
       </div>
 
-      <div class="stat-card">
-        <div class="stat-label">RT Moyen</div>
-        <div class="stat-value">${Math.round(avgRtMusic)}ms</div>
-        <div class="stat-secondary">Avec musique</div>
+      <!-- RT Musique -->
+      <div class="bg-white border border-apple-gray-200 rounded-2xl p-6 hover:shadow-lg transition-shadow duration-200">
+        <div class="text-xs uppercase tracking-wider text-apple-gray-400 mb-2">RT Moyen</div>
+        <div class="text-5xl font-semibold text-apple-gray-900">${Math.round(avgRtMusic)}ms</div>
+        <div class="text-sm text-apple-gray-500 mt-1">Avec musique</div>
       </div>
 
-      <div class="stat-card">
-        <div class="stat-label">RT Moyen</div>
-        <div class="stat-value">${Math.round(avgRtSilence)}ms</div>
-        <div class="stat-secondary">Sans musique</div>
+      <!-- RT Silence -->
+      <div class="bg-white border border-apple-gray-200 rounded-2xl p-6 hover:shadow-lg transition-shadow duration-200">
+        <div class="text-xs uppercase tracking-wider text-apple-gray-400 mb-2">RT Moyen</div>
+        <div class="text-5xl font-semibold text-apple-gray-900">${Math.round(avgRtSilence)}ms</div>
+        <div class="text-sm text-apple-gray-500 mt-1">Sans musique</div>
       </div>
     </div>
 
-    <div class="section">
-      <div class="section-title">Distribution</div>
-      <div class="distribution">
-        <div class="dist-item">
-          <div class="dist-label">Habitués C1</div>
-          <div class="dist-value">${db.exec('SELECT COUNT(*) FROM participants WHERE is_habitue = 1 AND condition = "C1"')[0]?.values[0]?.[0] || 0}</div>
+    <!-- Distribution -->
+    <div class="bg-white border border-apple-gray-200 rounded-2xl p-6 mb-6">
+      <h2 class="text-xl font-semibold mb-5">Distribution</h2>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-apple-gray-100 rounded-xl p-4">
+          <div class="text-sm text-apple-gray-500 mb-1">Habitués C1</div>
+          <div class="text-3xl font-semibold text-apple-gray-900">${db.exec('SELECT COUNT(*) FROM participants WHERE is_habitue = 1 AND condition = "C1"')[0]?.values[0]?.[0] || 0}</div>
         </div>
-        <div class="dist-item">
-          <div class="dist-label">Habitués C2</div>
-          <div class="dist-value">${db.exec('SELECT COUNT(*) FROM participants WHERE is_habitue = 1 AND condition = "C2"')[0]?.values[0]?.[0] || 0}</div>
+        <div class="bg-apple-gray-100 rounded-xl p-4">
+          <div class="text-sm text-apple-gray-500 mb-1">Habitués C2</div>
+          <div class="text-3xl font-semibold text-apple-gray-900">${db.exec('SELECT COUNT(*) FROM participants WHERE is_habitue = 1 AND condition = "C2"')[0]?.values[0]?.[0] || 0}</div>
         </div>
-        <div class="dist-item">
-          <div class="dist-label">Non-habitués C1</div>
-          <div class="dist-value">${db.exec('SELECT COUNT(*) FROM participants WHERE is_habitue = 0 AND condition = "C1"')[0]?.values[0]?.[0] || 0}</div>
+        <div class="bg-apple-gray-100 rounded-xl p-4">
+          <div class="text-sm text-apple-gray-500 mb-1">Non-habitués C1</div>
+          <div class="text-3xl font-semibold text-apple-gray-900">${db.exec('SELECT COUNT(*) FROM participants WHERE is_habitue = 0 AND condition = "C1"')[0]?.values[0]?.[0] || 0}</div>
         </div>
-        <div class="dist-item">
-          <div class="dist-label">Non-habitués C2</div>
-          <div class="dist-value">${db.exec('SELECT COUNT(*) FROM participants WHERE is_habitue = 0 AND condition = "C2"')[0]?.values[0]?.[0] || 0}</div>
+        <div class="bg-apple-gray-100 rounded-xl p-4">
+          <div class="text-sm text-apple-gray-500 mb-1">Non-habitués C2</div>
+          <div class="text-3xl font-semibold text-apple-gray-900">${db.exec('SELECT COUNT(*) FROM participants WHERE is_habitue = 0 AND condition = "C2"')[0]?.values[0]?.[0] || 0}</div>
         </div>
       </div>
     </div>
 
     ${recentParticipants.length > 0 && recentParticipants[0].values.length > 0 ? `
-    <div class="section">
-      <div class="section-title">10 derniers participants</div>
-      <table>
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Condition</th>
-            <th>Profil</th>
-            <th>RT Musique</th>
-            <th>RT Silence</th>
-            <th>Date</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${recentParticipants[0].values.map(row => `
-            <tr>
-              <td><code>${row[0].substring(0, 8)}...</code></td>
-              <td><span class="badge badge-${row[1].toLowerCase()}">${row[1]}</span></td>
-              <td><span class="badge ${row[2] ? 'badge-habitue' : ''}">${row[2] ? 'Habitué' : 'Non-habitué'}</span></td>
-              <td>${row[3] ? Math.round(row[3]) + 'ms' : '-'}</td>
-              <td>${row[4] ? Math.round(row[4]) + 'ms' : '-'}</td>
-              <td>${new Date(row[5]).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' })}</td>
+    <!-- Recent Participants -->
+    <div class="bg-white border border-apple-gray-200 rounded-2xl p-6 mb-6">
+      <h2 class="text-xl font-semibold mb-5">10 derniers participants</h2>
+      <div class="overflow-x-auto">
+        <table class="w-full">
+          <thead>
+            <tr class="border-b border-apple-gray-200">
+              <th class="text-left text-xs uppercase tracking-wider text-apple-gray-400 pb-3 px-2 font-medium">ID</th>
+              <th class="text-left text-xs uppercase tracking-wider text-apple-gray-400 pb-3 px-2 font-medium">Condition</th>
+              <th class="text-left text-xs uppercase tracking-wider text-apple-gray-400 pb-3 px-2 font-medium">Profil</th>
+              <th class="text-left text-xs uppercase tracking-wider text-apple-gray-400 pb-3 px-2 font-medium">RT Musique</th>
+              <th class="text-left text-xs uppercase tracking-wider text-apple-gray-400 pb-3 px-2 font-medium">RT Silence</th>
+              <th class="text-left text-xs uppercase tracking-wider text-apple-gray-400 pb-3 px-2 font-medium">Date</th>
             </tr>
-          `).join('')}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            ${recentParticipants[0].values.map(row => `
+              <tr class="border-b border-apple-gray-100">
+                <td class="py-3 px-2"><code class="text-sm font-mono text-apple-gray-600">${row[0].substring(0, 8)}...</code></td>
+                <td class="py-3 px-2"><span class="inline-block px-2 py-1 rounded-md text-xs font-medium ${row[1] === 'C1' ? 'bg-apple-gray-100' : 'bg-apple-gray-200'} text-apple-gray-900">${row[1]}</span></td>
+                <td class="py-3 px-2"><span class="inline-block px-2 py-1 rounded-md text-xs font-medium ${row[2] ? 'bg-apple-gray-300 text-apple-gray-900' : 'bg-apple-gray-100 text-apple-gray-700'}">${row[2] ? 'Habitué' : 'Non-habitué'}</span></td>
+                <td class="py-3 px-2 text-sm text-apple-gray-900">${row[3] ? Math.round(row[3]) + 'ms' : '-'}</td>
+                <td class="py-3 px-2 text-sm text-apple-gray-900">${row[4] ? Math.round(row[4]) + 'ms' : '-'}</td>
+                <td class="py-3 px-2 text-sm text-apple-gray-500">${new Date(row[5]).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' })}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
     </div>
     ` : ''}
 
-    <div class="actions">
-      <a href="/api/export" class="btn btn-primary">Exporter CSV</a>
-      <a href="/api/stats" class="btn btn-secondary">Statistiques JSON</a>
-      <button onclick="location.reload()" class="btn btn-secondary">Actualiser</button>
-      <button onclick="if(confirm('Supprimer TOUS les participants ? Un backup sera créé.')) fetch('/api/cleanup', {method:'POST'}).then(r=>r.json()).then(()=>location.reload())" class="btn btn-danger">Nettoyer</button>
+    <!-- Actions -->
+    <div class="flex flex-wrap gap-3">
+      <a href="/api/export" class="px-6 py-3 rounded-xl bg-apple-gray-900 text-white font-medium hover:bg-apple-gray-700 transition-colors duration-200 inline-block">Exporter CSV</a>
+      <a href="/api/stats" class="px-6 py-3 rounded-xl bg-apple-gray-100 text-apple-gray-900 border border-apple-gray-200 font-medium hover:bg-apple-gray-200 transition-colors duration-200 inline-block">Statistiques JSON</a>
+      <button onclick="location.reload()" class="px-6 py-3 rounded-xl bg-apple-gray-100 text-apple-gray-900 border border-apple-gray-200 font-medium hover:bg-apple-gray-200 transition-colors duration-200">Actualiser</button>
+      <button onclick="if(confirm('Supprimer TOUS les participants ? Un backup sera créé.')) fetch('/api/cleanup', {method:'POST'}).then(r=>r.json()).then(()=>location.reload())" class="px-6 py-3 rounded-xl bg-red-500 text-white font-medium hover:bg-red-600 transition-colors duration-200">Nettoyer</button>
     </div>
   </div>
 </body>
