@@ -4,6 +4,7 @@ import { useAudio } from '../contexts/AudioContext';
 import Layout from '../components/Layout';
 import Slider from '../components/Slider';
 import { imageStimuli } from '../data/imageStimuli';
+import { BrainCircuit } from 'lucide-react';
 
 export default function Experiment() {
   const { updateData, addTrialData, setCondition, setParticipantId, condition, exportData, participantId, data } = useExperiment();
@@ -319,7 +320,7 @@ export default function Experiment() {
     }
   }, [pvtState, handlePVTResponse]);
 
-  // Cleanup
+  // Cleanup PVT timer
   useEffect(() => {
     return () => {
       if (pvtTimerRef.current) {
@@ -327,6 +328,21 @@ export default function Experiment() {
       }
     };
   }, []);
+
+  // Cleanup PVT when entering thank_you (stop timer and remove listeners)
+  useEffect(() => {
+    if (step === 'thank_you') {
+      console.log('🛑 Thank you: nettoyage complet PVT');
+      // Stop timer animation
+      if (pvtTimerRef.current) {
+        cancelAnimationFrame(pvtTimerRef.current);
+        pvtTimerRef.current = null;
+      }
+      // Reset PVT state
+      setPvtState('ready');
+      setPvtTimer('0000');
+    }
+  }, [step]);
 
   // DEV MODE: Skip PVT with Escape key
   useEffect(() => {
@@ -419,6 +435,9 @@ export default function Experiment() {
         {/* START - Audio Authorization */}
         {step === 'start' && (
           <div className="max-w-2xl mx-auto text-center space-y-8">
+            <div className="flex justify-center mb-6">
+              <BrainCircuit className="w-20 h-20 text-apple-gray-900" strokeWidth={1.5} />
+            </div>
             <h1 className="text-4xl md:text-5xl font-semibold text-apple-gray-900">
               Expérience
             </h1>
@@ -478,12 +497,12 @@ export default function Experiment() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-apple-gray-700 mb-2">Genre</label>
+                  <label className="label-apple">Genre</label>
                   <select
                     required
                     value={gender}
                     onChange={(e) => setGender(e.target.value)}
-                    className="w-full px-4 py-3 border border-apple-gray-300 rounded-xl focus:ring-2 focus:ring-apple-gray-900 focus:border-transparent"
+                    className="select-apple"
                   >
                     <option value="">Sélectionner</option>
                     <option value="F">Femme</option>
