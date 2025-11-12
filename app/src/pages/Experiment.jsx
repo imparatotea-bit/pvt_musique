@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useExperiment } from '../contexts/ExperimentContext';
 import { useAudio } from '../contexts/AudioContext';
 import Layout from '../components/Layout';
@@ -92,6 +92,14 @@ export default function Experiment() {
     const isHabitue = musicHabit >= 6;
     const assignedCondition = Math.random() < 0.5 ? 'C1' : 'C2';
     const pid = `P${Date.now()}`;
+
+    console.log('🎲 Assignation aléatoire:', {
+      musicHabit,
+      isHabitue: isHabitue ? 'OUI (≥6)' : 'NON (<6)',
+      condition: assignedCondition,
+      participantId: pid.substring(0, 12) + '...',
+    });
+    console.log(`🎲 ${assignedCondition === 'C1' ? 'C1 = Silence puis Musique' : 'C2 = Musique puis Silence'}`);
 
     setCondition(assignedCondition);
     setParticipantId(pid);
@@ -283,6 +291,8 @@ export default function Experiment() {
 
         // Add fake data
         const currentBlock = step === 'pvt1' ? 'pvtBlock1' : 'pvtBlock2';
+        console.log(`⚠️ [DEV MODE] Génération de ${fakeTrials.length} essais fake pour ${currentBlock}`);
+        console.log(`⚠️ [DEV MODE] Exemple RT: ${fakeTrials.slice(0, 3).map(t => Math.round(t.rt)).join('ms, ')}ms`);
         updateData(currentBlock, fakeTrials);
 
         // Move to next step
@@ -293,14 +303,22 @@ export default function Experiment() {
         }
 
         if (step === 'pvt1') {
+          console.log('⚠️ [DEV MODE] → Passage à inst_cat2');
           setCatImages(shuffleImages());
           setCatCurrentIndex(0);
           setStep('inst_cat2');
         } else {
+          console.log('⚠️ [DEV MODE] → Passage à thank_you');
           setStep('thank_you');
           exportData()
-            .then(() => setExportStatus('success'))
-            .catch(() => setExportStatus('error'));
+            .then(() => {
+              console.log('✅ [DEV MODE] Export réussi');
+              setExportStatus('success');
+            })
+            .catch((err) => {
+              console.error('❌ [DEV MODE] Export échoué:', err);
+              setExportStatus('error');
+            });
         }
       }
     };
@@ -309,25 +327,38 @@ export default function Experiment() {
     return () => window.removeEventListener('keydown', handleDevSkip);
   }, [step, exportData, shuffleImages, updateData]);
 
-  // Calculate stats for thank you page
-  const calculateStats = () => {
+  // Calculate stats for thank you page (memoized to avoid recalculating 4 times)
+  const stats = useMemo(() => {
     const pvt1 = data.pvtBlock1 || [];
     const pvt2 = data.pvtBlock2 || [];
+
+    console.log('📊 Calcul stats RT:', {
+      condition,
+      pvt1Length: pvt1.length,
+      pvt2Length: pvt2.length,
+      pvt1Sample: pvt1.slice(0, 3),
+      pvt2Sample: pvt2.slice(0, 3),
+    });
 
     const calculateMean = (arr) => {
       if (!arr.length) return 0;
       const sum = arr.reduce((acc, trial) => acc + trial.rt, 0);
-      return Math.round(sum / arr.length);
+      const mean = Math.round(sum / arr.length);
+      console.log(`  → Moyenne de ${arr.length} essais: ${mean}ms`);
+      return mean;
     };
 
     // Determine which block had music
     const isMusicFirst = condition === 'C2';
+    console.log(`  → Condition: ${condition}, musique ${isMusicFirst ? 'AVANT (pvt1)' : 'APRÈS (pvt2)'}`);
 
     const rtWithMusic = isMusicFirst ? calculateMean(pvt1) : calculateMean(pvt2);
     const rtWithoutMusic = isMusicFirst ? calculateMean(pvt2) : calculateMean(pvt1);
 
+    console.log('📊 Résultats finaux:', { rtWithMusic, rtWithoutMusic });
+
     return { rtWithMusic, rtWithoutMusic };
-  };
+  }, [data.pvtBlock1, data.pvtBlock2, condition]);
 
   // === RENDER ===
   return (
@@ -581,14 +612,22 @@ export default function Experiment() {
             <div className="grid md:grid-cols-2 gap-6 max-w-3xl mx-auto">
               <div className="bg-white p-8 rounded-3xl shadow-soft-lg border border-apple-gray-200">
                 <p className="text-sm uppercase tracking-wide text-apple-gray-500 mb-2">Avec musique</p>
-                <p className="text-5xl font-bold text-apple-gray-900">{calculateStats().rtWithMusic}</p>
-                <p className="text-sm text-apple-gray-500 mt-2">millisecondes</p>
+                <p className="text-5xl font-bold text-apple-gray-900">
+                  {stats.rtWithMusic || '-'}
+                </p>
+                <p className="text-sm text-apple-gray-500 mt-2">
+                  {stats.rtWithMusic ? 'millisecondes' : 'aucune donnée'}
+                </p>
               </div>
 
               <div className="bg-white p-8 rounded-3xl shadow-soft-lg border border-apple-gray-200">
                 <p className="text-sm uppercase tracking-wide text-apple-gray-500 mb-2">Sans musique</p>
-                <p className="text-5xl font-bold text-apple-gray-900">{calculateStats().rtWithoutMusic}</p>
-                <p className="text-sm text-apple-gray-500 mt-2">millisecondes</p>
+                <p className="text-5xl font-bold text-apple-gray-900">
+                  {stats.rtWithoutMusic || '-'}
+                </p>
+                <p className="text-sm text-apple-gray-500 mt-2">
+                  {stats.rtWithoutMusic ? 'millisecondes' : 'aucune donnée'}
+                </p>
               </div>
             </div>
 
