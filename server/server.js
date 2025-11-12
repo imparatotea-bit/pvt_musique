@@ -220,26 +220,33 @@ app.get('/', (req, res) => {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-  <style type="text/tailwindcss">
-    @theme {
-      --color-apple-gray-50: #fafafa;
-      --color-apple-gray-100: #f5f5f7;
-      --color-apple-gray-200: #e8e8ed;
-      --color-apple-gray-300: #d2d2d7;
-      --color-apple-gray-400: #86868b;
-      --color-apple-gray-500: #6e6e73;
-      --color-apple-gray-600: #515154;
-      --color-apple-gray-700: #3a3a3c;
-      --color-apple-gray-800: #2c2c2e;
-      --color-apple-gray-900: #1c1c1e;
-    }
-
-    @layer base {
-      body {
-        font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
-        -webkit-font-smoothing: antialiased;
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'apple-gray': {
+              50: '#fafafa',
+              100: '#f5f5f7',
+              200: '#e8e8ed',
+              300: '#d2d2d7',
+              400: '#86868b',
+              500: '#6e6e73',
+              600: '#515154',
+              700: '#3a3a3c',
+              800: '#2c2c2e',
+              900: '#1c1c1e',
+            }
+          }
+        }
       }
+    }
+  </script>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
+      -webkit-font-smoothing: antialiased;
     }
   </style>
   <title>Backend PVT</title>
