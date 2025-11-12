@@ -3,9 +3,62 @@ const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
 const initSqlJs = require('sql.js');
+const crypto = require('crypto');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Configuration authentification (modifiable via variables d'environnement)
+const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'pvt2025';
+const DELETE_PASSWORD = process.env.DELETE_PASSWORD || 'supprimer2025';
+
+// Stocker les logs console
+const consoleLogs = [];
+const MAX_LOGS = 200;
+
+// Intercepter console.log pour capturer les logs
+const originalLog = console.log;
+console.log = function(...args) {
+  const timestamp = new Date().toISOString();
+  const message = args.map(arg =>
+    typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+  ).join(' ');
+
+  consoleLogs.push({ timestamp, message });
+  if (consoleLogs.length > MAX_LOGS) {
+    consoleLogs.shift(); // Garder seulement les MAX_LOGS derniers
+  }
+
+  originalLog.apply(console, args);
+};
+
+// Sessions simples en mémoire (remise à zéro au redémarrage serveur)
+const sessions = new Map();
+
+// Générer un token de session
+function generateSessionToken() {
+  return crypto.randomBytes(32).toString('hex');
+}
+
+// Middleware d'authentification
+function requireAuth(req, res, next) {
+  const authHeader = req.headers.authorization;
+  const cookieToken = req.headers.cookie?.split('session=')[1]?.split(';')[0];
+  const token = authHeader?.replace('Bearer ', '') || cookieToken;
+
+  if (token && sessions.has(token)) {
+    const session = sessions.get(token);
+    if (Date.now() < session.expiresAt) {
+      req.user = session.user;
+      return next();
+    } else {
+      sessions.delete(token);
+    }
+  }
+
+  res.status(401).json({ error: 'Authentification requise' });
+}
 
 // Middleware
 app.use(cors());
@@ -220,9 +273,16 @@ app.get('/api/export', (req, res) => {
   }
 });
 
-// POST /api/cleanup - Nettoyer les anciennes données (admin only)
-app.post('/api/cleanup', (req, res) => {
+// POST /api/cleanup - Nettoyer les anciennes données (admin only + password)
+app.post('/api/cleanup', requireAuth, (req, res) => {
   try {
+    const { password } = req.body;
+
+    // Vérifier le mot de passe de suppression
+    if (password !== DELETE_PASSWORD) {
+      return res.status(403).json({ error: 'Mot de passe incorrect' });
+    }
+
     // Backup avant nettoyage
     const backupPath = path.join(__dirname, `participants_backup_${Date.now()}.db`);
     const data = db.export();
@@ -241,9 +301,213 @@ app.post('/api/cleanup', (req, res) => {
   }
 });
 
-// GET / - Dashboard minimaliste Apple/Notion
+// POST /api/login - Authentification
+app.post('/api/login', (req, res) => {
+  try {
+    const { username, password } = req.body;
+
+    if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+      const token = generateSessionToken();
+      const expiresAt = Date.now() + (24 * 60 * 60 * 1000); // 24 heures
+
+      sessions.set(token, {
+        user: username,
+        expiresAt
+      });
+
+      console.log(`✅ Connexion réussie: ${username}`);
+
+      res.json({
+        success: true,
+        token,
+        expiresAt
+      });
+    } else {
+      res.status(401).json({ error: 'Identifiants incorrects' });
+    }
+  } catch (error) {
+    console.error('❌ Erreur login:', error);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
+// POST /api/logout - Déconnexion
+app.post('/api/logout', (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    const cookieToken = req.headers.cookie?.split('session=')[1]?.split(';')[0];
+    const token = authHeader?.replace('Bearer ', '') || cookieToken;
+
+    if (token && sessions.has(token)) {
+      sessions.delete(token);
+      console.log('✅ Déconnexion réussie');
+    }
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('❌ Erreur logout:', error);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
+// GET /api/logs - Récupérer les logs console (admin only)
+app.get('/api/logs', requireAuth, (req, res) => {
+  try {
+    res.json({
+      logs: consoleLogs.slice().reverse(), // Plus récents en premier
+      count: consoleLogs.length
+    });
+  } catch (error) {
+    console.error('❌ Erreur logs:', error);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
+// GET /login - Page de login
+app.get('/login', (req, res) => {
+  const html = `
+<!doctype html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'apple-gray': {
+              50: '#fafafa',
+              100: '#f5f5f7',
+              200: '#e8e8ed',
+              300: '#d2d2d7',
+              400: '#86868b',
+              500: '#6e6e73',
+              600: '#515154',
+              700: '#3a3a3c',
+              800: '#2c2c2e',
+              900: '#1c1c1e',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+  </style>
+  <title>Connexion - Backend PVT</title>
+</head>
+<body class="bg-apple-gray-50 text-apple-gray-900 antialiased min-h-screen flex items-center justify-center">
+  <div class="w-full max-w-md px-5">
+    <div class="bg-white border border-apple-gray-200 rounded-3xl p-8 shadow-lg">
+      <h1 class="text-3xl font-semibold text-apple-gray-900 mb-2 text-center">Backend PVT</h1>
+      <p class="text-apple-gray-400 text-center mb-8">Dashboard administrateur</p>
+
+      <form id="loginForm" class="space-y-5">
+        <div>
+          <label class="block text-sm font-medium text-apple-gray-700 mb-2">Identifiant</label>
+          <input
+            type="text"
+            id="username"
+            required
+            autocomplete="username"
+            class="w-full px-4 py-3 border border-apple-gray-300 rounded-xl focus:ring-2 focus:ring-apple-gray-900 focus:border-transparent transition-all"
+            placeholder="Entrez votre identifiant"
+          />
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-apple-gray-700 mb-2">Mot de passe</label>
+          <input
+            type="password"
+            id="password"
+            required
+            autocomplete="current-password"
+            class="w-full px-4 py-3 border border-apple-gray-300 rounded-xl focus:ring-2 focus:ring-apple-gray-900 focus:border-transparent transition-all"
+            placeholder="Entrez votre mot de passe"
+          />
+        </div>
+
+        <div id="error" class="hidden bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm"></div>
+
+        <button
+          type="submit"
+          class="w-full px-6 py-3 rounded-xl bg-apple-gray-900 text-white font-medium hover:bg-apple-gray-700 transition-colors duration-200"
+        >
+          Se connecter
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const username = document.getElementById('username').value;
+      const password = document.getElementById('password').value;
+      const errorDiv = document.getElementById('error');
+
+      try {
+        const response = await fetch('/api/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          // Stocker le token dans localStorage et cookie
+          localStorage.setItem('authToken', data.token);
+          localStorage.setItem('authExpires', data.expiresAt);
+          document.cookie = \`authToken=\${data.token}; path=/; max-age=86400\`; // 24h
+          // Rediriger vers le dashboard
+          window.location.href = '/';
+        } else {
+          errorDiv.textContent = data.error || 'Erreur de connexion';
+          errorDiv.classList.remove('hidden');
+        }
+      } catch (error) {
+        errorDiv.textContent = 'Erreur de connexion au serveur';
+        errorDiv.classList.remove('hidden');
+      }
+    });
+  </script>
+</body>
+</html>
+  `;
+  res.send(html);
+});
+
+// GET / - Dashboard minimaliste Apple/Notion (protégé par authentification)
 app.get('/', (req, res) => {
   try {
+    // Vérifier l'authentification via cookie ou header
+    const authHeader = req.headers.authorization;
+    const cookieToken = req.headers.cookie?.split('authToken=')[1]?.split(';')[0];
+    const token = authHeader?.replace('Bearer ', '') || cookieToken;
+
+    let isAuthenticated = false;
+    if (token && sessions.has(token)) {
+      const session = sessions.get(token);
+      if (Date.now() < session.expiresAt) {
+        isAuthenticated = true;
+      } else {
+        sessions.delete(token);
+      }
+    }
+
+    // Si non authentifié, rediriger vers la page de login
+    if (!isAuthenticated) {
+      return res.redirect('/login');
+    }
+
     const stats = db.exec('SELECT COUNT(*) as total FROM participants')[0]?.values[0]?.[0] || 0;
     const habitues = db.exec('SELECT COUNT(*) FROM participants WHERE is_habitue = 1')[0]?.values[0]?.[0] || 0;
     const nonHabitues = db.exec('SELECT COUNT(*) FROM participants WHERE is_habitue = 0')[0]?.values[0]?.[0] || 0;
@@ -394,14 +658,177 @@ app.get('/', (req, res) => {
     </div>
     ` : ''}
 
+    <!-- Logs Console -->
+    <div class="bg-white border border-apple-gray-200 rounded-2xl p-6 mb-6">
+      <div class="flex justify-between items-center mb-5">
+        <h2 class="text-xl font-semibold">Logs Console</h2>
+        <button onclick="loadLogs()" class="px-4 py-2 rounded-lg bg-apple-gray-100 text-apple-gray-900 text-sm font-medium hover:bg-apple-gray-200 transition-colors duration-200">
+          Actualiser les logs
+        </button>
+      </div>
+      <div id="logsContainer" class="bg-apple-gray-50 rounded-xl p-4 max-h-96 overflow-y-auto font-mono text-xs">
+        <div class="text-apple-gray-400 text-center py-8">Chargement des logs...</div>
+      </div>
+    </div>
+
     <!-- Actions -->
-    <div class="flex flex-wrap gap-3">
+    <div class="flex flex-wrap gap-3 mb-6">
       <a href="/api/export" class="px-6 py-3 rounded-xl bg-apple-gray-900 text-white font-medium hover:bg-apple-gray-700 transition-colors duration-200 inline-block">Exporter CSV</a>
       <a href="/api/stats" class="px-6 py-3 rounded-xl bg-apple-gray-100 text-apple-gray-900 border border-apple-gray-200 font-medium hover:bg-apple-gray-200 transition-colors duration-200 inline-block">Statistiques JSON</a>
       <button onclick="location.reload()" class="px-6 py-3 rounded-xl bg-apple-gray-100 text-apple-gray-900 border border-apple-gray-200 font-medium hover:bg-apple-gray-200 transition-colors duration-200">Actualiser</button>
-      <button onclick="if(confirm('Supprimer TOUS les participants ? Un backup sera créé.')) fetch('/api/cleanup', {method:'POST'}).then(r=>r.json()).then(()=>location.reload())" class="px-6 py-3 rounded-xl bg-red-500 text-white font-medium hover:bg-red-600 transition-colors duration-200">Nettoyer</button>
+      <button onclick="showDeleteModal()" class="px-6 py-3 rounded-xl bg-red-500 text-white font-medium hover:bg-red-600 transition-colors duration-200">Nettoyer la BDD</button>
+      <button onclick="logout()" class="px-6 py-3 rounded-xl bg-apple-gray-100 text-apple-gray-900 border border-apple-gray-200 font-medium hover:bg-apple-gray-200 transition-colors duration-200">Déconnexion</button>
     </div>
   </div>
+
+  <!-- Modal de suppression -->
+  <div id="deleteModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-2xl p-8 max-w-md w-full mx-5 shadow-2xl">
+      <h3 class="text-2xl font-semibold text-apple-gray-900 mb-4">Supprimer tous les participants</h3>
+      <p class="text-apple-gray-600 mb-6">Cette action est irréversible. Un backup sera créé automatiquement.</p>
+
+      <div class="mb-6">
+        <label class="block text-sm font-medium text-apple-gray-700 mb-2">Mot de passe de suppression</label>
+        <input
+          type="password"
+          id="deletePassword"
+          class="w-full px-4 py-3 border border-apple-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all"
+          placeholder="Entrez le mot de passe"
+        />
+      </div>
+
+      <div id="deleteError" class="hidden bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm mb-4"></div>
+
+      <div class="flex gap-3">
+        <button onclick="hideDeleteModal()" class="flex-1 px-6 py-3 rounded-xl bg-apple-gray-100 text-apple-gray-900 font-medium hover:bg-apple-gray-200 transition-colors duration-200">
+          Annuler
+        </button>
+        <button onclick="confirmDelete()" class="flex-1 px-6 py-3 rounded-xl bg-red-500 text-white font-medium hover:bg-red-600 transition-colors duration-200">
+          Confirmer
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Récupérer le token d'authentification
+    function getAuthToken() {
+      return localStorage.getItem('authToken');
+    }
+
+    // Charger les logs console
+    async function loadLogs() {
+      const logsContainer = document.getElementById('logsContainer');
+      logsContainer.innerHTML = '<div class="text-apple-gray-400 text-center py-8">Chargement des logs...</div>';
+
+      try {
+        const response = await fetch('/api/logs', {
+          headers: {
+            'Authorization': 'Bearer ' + getAuthToken()
+          }
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+
+          if (data.logs.length === 0) {
+            logsContainer.innerHTML = '<div class="text-apple-gray-400 text-center py-8">Aucun log disponible</div>';
+          } else {
+            logsContainer.innerHTML = data.logs.map(log => {
+              const date = new Date(log.timestamp).toLocaleString('fr-FR');
+              return \`<div class="mb-2 pb-2 border-b border-apple-gray-200">
+                <div class="text-apple-gray-400 text-xs mb-1">\${date}</div>
+                <div class="text-apple-gray-900 whitespace-pre-wrap">\${log.message}</div>
+              </div>\`;
+            }).join('');
+          }
+        } else {
+          logsContainer.innerHTML = '<div class="text-red-500 text-center py-8">Erreur de chargement des logs</div>';
+        }
+      } catch (error) {
+        logsContainer.innerHTML = '<div class="text-red-500 text-center py-8">Erreur de connexion au serveur</div>';
+      }
+    }
+
+    // Afficher le modal de suppression
+    function showDeleteModal() {
+      document.getElementById('deleteModal').classList.remove('hidden');
+      document.getElementById('deletePassword').value = '';
+      document.getElementById('deleteError').classList.add('hidden');
+    }
+
+    // Cacher le modal de suppression
+    function hideDeleteModal() {
+      document.getElementById('deleteModal').classList.add('hidden');
+    }
+
+    // Confirmer la suppression
+    async function confirmDelete() {
+      const password = document.getElementById('deletePassword').value;
+      const errorDiv = document.getElementById('deleteError');
+
+      if (!password) {
+        errorDiv.textContent = 'Veuillez entrer le mot de passe';
+        errorDiv.classList.remove('hidden');
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/cleanup', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + getAuthToken()
+          },
+          body: JSON.stringify({ password })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          alert('Base de données nettoyée avec succès!');
+          location.reload();
+        } else {
+          errorDiv.textContent = data.error || 'Erreur lors de la suppression';
+          errorDiv.classList.remove('hidden');
+        }
+      } catch (error) {
+        errorDiv.textContent = 'Erreur de connexion au serveur';
+        errorDiv.classList.remove('hidden');
+      }
+    }
+
+    // Déconnexion
+    async function logout() {
+      try {
+        await fetch('/api/logout', {
+          method: 'POST',
+          headers: {
+            'Authorization': 'Bearer ' + getAuthToken()
+          }
+        });
+      } catch (error) {
+        console.error('Erreur lors de la déconnexion:', error);
+      }
+
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('authExpires');
+      document.cookie = 'authToken=; path=/; max-age=0'; // Supprimer le cookie
+      window.location.href = '/login';
+    }
+
+    // Charger les logs au chargement de la page
+    document.addEventListener('DOMContentLoaded', () => {
+      loadLogs();
+    });
+
+    // Fermer le modal en cliquant en dehors
+    document.getElementById('deleteModal').addEventListener('click', (e) => {
+      if (e.target.id === 'deleteModal') {
+        hideDeleteModal();
+      }
+    });
+  </script>
 </body>
 </html>
     `;

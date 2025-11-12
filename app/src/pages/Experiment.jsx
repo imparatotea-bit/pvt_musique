@@ -574,13 +574,13 @@ export default function Experiment() {
               Tâche de catégorisation
             </h1>
             <div className="space-y-6 text-lg text-apple-gray-700">
-              <p>Des mots vont apparaître à l'écran</p>
-              <p>Indiquez si l'objet est <strong>naturel</strong> ou <strong>artificiel</strong></p>
+              <p>Des images vont apparaître à l'écran</p>
+              <p>Indiquez si l'objet est <strong>intérieur</strong> ou <strong>extérieur</strong></p>
 
               <div className="bg-apple-gray-50 p-8 rounded-2xl inline-block">
                 <div className="space-y-4 text-xl">
-                  <p><kbd className="px-4 py-2 bg-white rounded-xl shadow-soft font-mono font-bold border border-apple-gray-200">F</kbd> = Naturel</p>
-                  <p><kbd className="px-4 py-2 bg-white rounded-xl shadow-soft font-mono font-bold border border-apple-gray-200">J</kbd> = Artificiel</p>
+                  <p><kbd className="px-4 py-2 bg-white rounded-xl shadow-soft font-mono font-bold border border-apple-gray-200">F</kbd> = Intérieur</p>
+                  <p><kbd className="px-4 py-2 bg-white rounded-xl shadow-soft font-mono font-bold border border-apple-gray-200">J</kbd> = Extérieur</p>
                 </div>
               </div>
 
@@ -614,11 +614,11 @@ export default function Experiment() {
             <div className="flex gap-12 justify-center">
               <div className="text-apple-gray-600">
                 <kbd className="px-6 py-3 bg-apple-gray-100 rounded-xl font-mono font-bold text-2xl shadow-soft">F</kbd>
-                <p className="mt-4 text-lg">Naturel</p>
+                <p className="mt-4 text-lg">Intérieur</p>
               </div>
               <div className="text-apple-gray-600">
                 <kbd className="px-6 py-3 bg-apple-gray-100 rounded-xl font-mono font-bold text-2xl shadow-soft">J</kbd>
-                <p className="mt-4 text-lg">Artificiel</p>
+                <p className="mt-4 text-lg">Extérieur</p>
               </div>
             </div>
           </div>
