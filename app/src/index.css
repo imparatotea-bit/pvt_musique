@@ -1,6 +1,7 @@
 @import "tailwindcss";
 
 @theme {
+  /* Palette Apple minimaliste */
   --color-apple-gray-50: #fafafa;
   --color-apple-gray-100: #f5f5f7;
   --color-apple-gray-200: #e8e8ed;
@@ -11,14 +12,19 @@
   --color-apple-gray-700: #3a3a3c;
   --color-apple-gray-800: #2c2c2e;
   --color-apple-gray-900: #1c1c1e;
-  
+
+  /* Shadows subtiles */
   --shadow-soft: 0 2px 8px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.06);
   --shadow-soft-lg: 0 8px 24px rgba(0, 0, 0, 0.06), 0 2px 6px rgba(0, 0, 0, 0.04);
   --shadow-soft-xl: 0 16px 48px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.04);
-  
+
+  /* Animations */
   --animate-fade-in: fade-in 0.4s ease-out;
   --animate-slide-up: slide-up 0.4s ease-out;
   --animate-scale-in: scale-in 0.3s ease-out;
+
+  /* Font family */
+  --font-family-sans: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
 }
 
 @keyframes fade-in {
