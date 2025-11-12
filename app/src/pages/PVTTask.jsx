@@ -30,7 +30,7 @@ export default function PVTTask({ block }) {
   // Timer interval reference
   const timerIntervalRef = useRef(null);
 
-  const totalTrials = 20;
+  const totalTrials = 48;
 
   // Generate random delay between 2000-10000ms (max 10s comme demandé)
   const getRandomDelay = () => {
@@ -284,9 +284,9 @@ export default function PVTTask({ block }) {
 
   const handleNext = () => {
     if (block === 1) {
-      navigate('/pvt-block-2');
+      navigate('/categorization-2');
     } else {
-      navigate('/instructions-categorization');
+      navigate('/post-experiment');
     }
   };
 
@@ -313,7 +313,7 @@ export default function PVTTask({ block }) {
       <div className="card min-h-[600px] flex flex-col justify-center items-center">
         <div className="text-center mb-8">
           <p className="text-sm text-apple-gray-400">
-            Bloc {block} • Essai {currentTrial + 1} / {totalTrials}
+            Bloc {block} • Temps estimé : 5 min
           </p>
         </div>
 

@@ -94,9 +94,9 @@ export default function CategorizationTask({ series }) {
 
   const handleNext = () => {
     if (series === 1) {
-      navigate('/categorization-2');
+      navigate('/instructions-pvt');
     } else {
-      navigate('/post-experiment');
+      navigate('/pvt-block-2');
     }
   };
 

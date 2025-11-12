@@ -16,7 +16,7 @@ export default function FatigueStress() {
       fatigue,
       stress,
     });
-    navigate('/instructions-pvt');
+    navigate('/instructions-categorization');
   };
 
   return (

@@ -86,7 +86,10 @@ export default function StartMusic() {
           ) : (
             <>
               <p>
-                Cette expérience se déroulera en silence.
+                Cette expérience se déroule en musique.
+              </p>
+              <p>
+                Veuillez mettre un casque ou des écouteurs et ajuster le volume à un niveau confortable.
               </p>
               <p>
                 Assurez-vous d'être dans un environnement calme.
