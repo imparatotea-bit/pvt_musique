@@ -1,0 +1,26 @@
+# Configuration Netlify pour pvt_musique
+
+# Build settings
+[build]
+  base = "app"
+  command = "npm run build"
+  publish = "dist"
+
+# Redirections API vers le backend Render
+[[redirects]]
+  from = "/api/*"
+  to = "https://pvt-musique-backend.onrender.com/api/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/static/*"
+  to = "https://pvt-musique-backend.onrender.com/static/:splat"
+  status = 200
+  force = true
+
+# SPA fallback - toutes les autres routes vont vers index.html
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
