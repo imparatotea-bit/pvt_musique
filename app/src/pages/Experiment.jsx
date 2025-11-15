@@ -98,7 +98,7 @@ export default function Experiment() {
   const handleAudioStart = async () => {
     try {
       // Load music file and wait for it to be ready
-      await loadTrack('/musique/musique.mp3');
+      await loadTrack('/musique/musiquee.mp3');
       console.log('✅ Audio complètement chargé, prêt à être utilisé');
       setAudioReady(true);
       // Initialize images once at the start
@@ -251,7 +251,7 @@ export default function Experiment() {
 
   const startPVTTrial = useCallback(() => {
     setPvtState('fixation');
-    const delay = 2000 + Math.random() * 8000;
+    const delay = 2000 + Math.random() * 6000;
 
     // Nettoyer timeout précédent si existe
     if (pvtDelayTimeoutRef.current) {
