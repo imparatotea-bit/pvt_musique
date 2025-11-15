@@ -386,64 +386,6 @@ export default function Experiment() {
     }
   }, [step]);
 
-  // DEV MODE: Skip PVT with Escape key
-  useEffect(() => {
-    const handleDevSkip = (e) => {
-      if (e.key === 'Escape' && (step === 'pvt1' || step === 'pvt2')) {
-        console.log('⚠️ [DEV MODE] Skipping PVT with Escape');
-
-        // Generate fake data
-        const fakeTrials = Array.from({ length: 10 }, (_, i) => ({
-          trial: i + 1,
-          rt: 200 + Math.random() * 300, // Random RT between 200-500ms
-          timestamp: new Date().toISOString(),
-        }));
-
-        // Add fake data
-        const currentBlock = step === 'pvt1' ? 'pvtBlock1' : 'pvtBlock2';
-        console.log(`⚠️ [DEV MODE] Génération de ${fakeTrials.length} essais fake pour ${currentBlock}`);
-        console.log(`⚠️ [DEV MODE] Exemple RT: ${fakeTrials.slice(0, 3).map(t => Math.round(t.rt)).join('ms, ')}ms`);
-        updateData(currentBlock, fakeTrials);
-
-        // Move to next step
-        setPvtState('ready');
-        if (pvtTimerRef.current) {
-          cancelAnimationFrame(pvtTimerRef.current);
-          pvtTimerRef.current = null;
-        }
-        if (pvtDelayTimeoutRef.current) {
-          clearTimeout(pvtDelayTimeoutRef.current);
-          pvtDelayTimeoutRef.current = null;
-        }
-
-        if (step === 'pvt1') {
-          console.log('⚠️ [DEV MODE] → Passage à inst_cat2');
-          setCatImages(getCatImages(2));
-          setCatCurrentIndex(0);
-          setStep('inst_cat2');
-        } else {
-          console.log('⚠️ [DEV MODE] → Passage à thank_you');
-          setStep('thank_you');
-          // Wait for state update to complete before exporting
-          setTimeout(() => {
-            exportData()
-              .then(() => {
-                console.log('✅ [DEV MODE] Export réussi');
-                setExportStatus('success');
-              })
-              .catch((err) => {
-                console.error('❌ [DEV MODE] Export échoué:', err);
-                setExportStatus('error');
-              });
-          }, 0);
-        }
-      }
-    };
-
-    window.addEventListener('keydown', handleDevSkip);
-    return () => window.removeEventListener('keydown', handleDevSkip);
-  }, [step, exportData, getCatImages, updateData]);
-
   // Calculate stats for thank you page (memoized to avoid recalculating 4 times)
   const stats = useMemo(() => {
     const pvt1 = data.pvtBlock1 || [];
@@ -708,13 +650,6 @@ export default function Experiment() {
                 <p className="text-xl text-apple-gray-600">Préparez-vous...</p>
               </div>
             )}
-
-            {/* Dev mode indicator */}
-            <div className="fixed bottom-4 right-4 opacity-20 hover:opacity-100 transition-opacity">
-              <p className="text-xs text-apple-gray-400 bg-apple-gray-50 px-3 py-2 rounded-lg border border-apple-gray-200">
-                DEV: <kbd className="text-xs bg-apple-gray-100 px-1.5 py-0.5 rounded">Esc</kbd> pour skip
-              </p>
-            </div>
           </div>
         )}
 
