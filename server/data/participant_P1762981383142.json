@@ -1,0 +1,366 @@
+{
+  "participantId": "P1762981383142",
+  "condition": "C1",
+  "timestamp": "2025-11-12T21:04:06.698Z",
+  "questionnaire": {
+    "age": 20,
+    "gender": "H",
+    "musicHabit": 5,
+    "fatigue": 5,
+    "stress": 5,
+    "isHabitue": true,
+    "condition": "C1",
+    "timestamp": "2025-11-12T21:03:03.181Z"
+  },
+  "pvtBlock1": [
+    {
+      "trial": 1,
+      "rt": 222.79207228010364,
+      "timestamp": "2025-11-12T21:03:33.398Z"
+    },
+    {
+      "trial": 2,
+      "rt": 224.91072853295586,
+      "timestamp": "2025-11-12T21:03:33.398Z"
+    },
+    {
+      "trial": 3,
+      "rt": 491.38696173866896,
+      "timestamp": "2025-11-12T21:03:33.398Z"
+    },
+    {
+      "trial": 4,
+      "rt": 447.4329678476571,
+      "timestamp": "2025-11-12T21:03:33.398Z"
+    },
+    {
+      "trial": 5,
+      "rt": 212.7217935423478,
+      "timestamp": "2025-11-12T21:03:33.398Z"
+    },
+    {
+      "trial": 6,
+      "rt": 456.26536654125425,
+      "timestamp": "2025-11-12T21:03:33.398Z"
+    },
+    {
+      "trial": 7,
+      "rt": 478.71710923129353,
+      "timestamp": "2025-11-12T21:03:33.398Z"
+    },
+    {
+      "trial": 8,
+      "rt": 218.04612466870495,
+      "timestamp": "2025-11-12T21:03:33.398Z"
+    },
+    {
+      "trial": 9,
+      "rt": 288.2677315573389,
+      "timestamp": "2025-11-12T21:03:33.398Z"
+    },
+    {
+      "trial": 10,
+      "rt": 314.92708262283185,
+      "timestamp": "2025-11-12T21:03:33.399Z"
+    }
+  ],
+  "pvtBlock2": [],
+  "categorization1": [
+    {
+      "trial": 1,
+      "image": "image-31.webp",
+      "response": "exterieur",
+      "rt": 2213.5,
+      "timestamp": "2025-11-12T21:03:06.559Z"
+    },
+    {
+      "trial": 2,
+      "image": "image-18.webp",
+      "response": "interieur",
+      "rt": 959.3999999761581,
+      "timestamp": "2025-11-12T21:03:07.520Z"
+    },
+    {
+      "trial": 3,
+      "image": "image-05.webp",
+      "response": "exterieur",
+      "rt": 877.1999999284744,
+      "timestamp": "2025-11-12T21:03:08.399Z"
+    },
+    {
+      "trial": 4,
+      "image": "image-33.webp",
+      "response": "interieur",
+      "rt": 987.8999999761581,
+      "timestamp": "2025-11-12T21:03:09.388Z"
+    },
+    {
+      "trial": 5,
+      "image": "image-28.webp",
+      "response": "interieur",
+      "rt": 863.7999999523163,
+      "timestamp": "2025-11-12T21:03:10.253Z"
+    },
+    {
+      "trial": 6,
+      "image": "image-08.webp",
+      "response": "interieur",
+      "rt": 963.1999999284744,
+      "timestamp": "2025-11-12T21:03:11.217Z"
+    },
+    {
+      "trial": 7,
+      "image": "image-25.webp",
+      "response": "interieur",
+      "rt": 942.7999999523163,
+      "timestamp": "2025-11-12T21:03:12.162Z"
+    },
+    {
+      "trial": 8,
+      "image": "image-06.webp",
+      "response": "exterieur",
+      "rt": 851.5,
+      "timestamp": "2025-11-12T21:03:13.015Z"
+    },
+    {
+      "trial": 9,
+      "image": "image-32.webp",
+      "response": "interieur",
+      "rt": 1016.2000000476837,
+      "timestamp": "2025-11-12T21:03:14.033Z"
+    },
+    {
+      "trial": 10,
+      "image": "image-16.webp",
+      "response": "exterieur",
+      "rt": 897,
+      "timestamp": "2025-11-12T21:03:14.931Z"
+    },
+    {
+      "trial": 11,
+      "image": "image-42.webp",
+      "response": "interieur",
+      "rt": 872.3999999761581,
+      "timestamp": "2025-11-12T21:03:15.805Z"
+    },
+    {
+      "trial": 12,
+      "image": "image-22.webp",
+      "response": "interieur",
+      "rt": 953.3999999761581,
+      "timestamp": "2025-11-12T21:03:16.761Z"
+    },
+    {
+      "trial": 13,
+      "image": "image-20.webp",
+      "response": "exterieur",
+      "rt": 2233.8000000715256,
+      "timestamp": "2025-11-12T21:03:18.997Z"
+    },
+    {
+      "trial": 14,
+      "image": "image-35.webp",
+      "response": "exterieur",
+      "rt": 1242.3999999761581,
+      "timestamp": "2025-11-12T21:03:20.240Z"
+    },
+    {
+      "trial": 15,
+      "image": "image-41.webp",
+      "response": "interieur",
+      "rt": 1340.7000000476837,
+      "timestamp": "2025-11-12T21:03:21.583Z"
+    },
+    {
+      "trial": 16,
+      "image": "image-17.webp",
+      "response": "exterieur",
+      "rt": 1013.1000000238419,
+      "timestamp": "2025-11-12T21:03:22.598Z"
+    },
+    {
+      "trial": 17,
+      "image": "image-38.webp",
+      "response": "interieur",
+      "rt": 931.7000000476837,
+      "timestamp": "2025-11-12T21:03:23.531Z"
+    },
+    {
+      "trial": 18,
+      "image": "image-30.webp",
+      "response": "exterieur",
+      "rt": 935.8999999761581,
+      "timestamp": "2025-11-12T21:03:24.469Z"
+    },
+    {
+      "trial": 19,
+      "image": "image-34.webp",
+      "response": "interieur",
+      "rt": 1333.7999999523163,
+      "timestamp": "2025-11-12T21:03:25.804Z"
+    },
+    {
+      "trial": 20,
+      "image": "image-09.webp",
+      "response": "exterieur",
+      "rt": 2152.100000023842,
+      "timestamp": "2025-11-12T21:03:27.958Z"
+    },
+    {
+      "trial": 21,
+      "image": "image-13.webp",
+      "response": "exterieur",
+      "rt": 1049.8999999761581,
+      "timestamp": "2025-11-12T21:03:29.009Z"
+    }
+  ],
+  "categorization2": [
+    {
+      "trial": 1,
+      "image": "image-10.webp",
+      "response": "exterieur",
+      "rt": 1967.8999999761581,
+      "timestamp": "2025-11-12T21:03:36.401Z"
+    },
+    {
+      "trial": 2,
+      "image": "image-37.webp",
+      "response": "interieur",
+      "rt": 1085.7000000476837,
+      "timestamp": "2025-11-12T21:03:37.488Z"
+    },
+    {
+      "trial": 3,
+      "image": "image-14.webp",
+      "response": "interieur",
+      "rt": 854.1999999284744,
+      "timestamp": "2025-11-12T21:03:38.344Z"
+    },
+    {
+      "trial": 4,
+      "image": "image-07.webp",
+      "response": "interieur",
+      "rt": 860.8999999761581,
+      "timestamp": "2025-11-12T21:03:39.207Z"
+    },
+    {
+      "trial": 5,
+      "image": "image-02.webp",
+      "response": "exterieur",
+      "rt": 959.5,
+      "timestamp": "2025-11-12T21:03:40.167Z"
+    },
+    {
+      "trial": 6,
+      "image": "image-12.webp",
+      "response": "exterieur",
+      "rt": 924.1000000238419,
+      "timestamp": "2025-11-12T21:03:41.092Z"
+    },
+    {
+      "trial": 7,
+      "image": "image-19.webp",
+      "response": "interieur",
+      "rt": 904.5,
+      "timestamp": "2025-11-12T21:03:41.998Z"
+    },
+    {
+      "trial": 8,
+      "image": "image-23.webp",
+      "response": "exterieur",
+      "rt": 970.2999999523163,
+      "timestamp": "2025-11-12T21:03:42.969Z"
+    },
+    {
+      "trial": 9,
+      "image": "image-36.webp",
+      "response": "interieur",
+      "rt": 959.8000000715256,
+      "timestamp": "2025-11-12T21:03:43.929Z"
+    },
+    {
+      "trial": 10,
+      "image": "image-21.webp",
+      "response": "exterieur",
+      "rt": 808.8999999761581,
+      "timestamp": "2025-11-12T21:03:44.739Z"
+    },
+    {
+      "trial": 11,
+      "image": "image-03.webp",
+      "response": "interieur",
+      "rt": 964.2999999523163,
+      "timestamp": "2025-11-12T21:03:45.704Z"
+    },
+    {
+      "trial": 12,
+      "image": "image-29.webp",
+      "response": "interieur",
+      "rt": 968.8000000715256,
+      "timestamp": "2025-11-12T21:03:46.674Z"
+    },
+    {
+      "trial": 13,
+      "image": "image-24.webp",
+      "response": "exterieur",
+      "rt": 1123.8000000715256,
+      "timestamp": "2025-11-12T21:03:47.799Z"
+    },
+    {
+      "trial": 14,
+      "image": "image-04.webp",
+      "response": "interieur",
+      "rt": 677.2000000476837,
+      "timestamp": "2025-11-12T21:03:48.477Z"
+    },
+    {
+      "trial": 15,
+      "image": "image-27.webp",
+      "response": "exterieur",
+      "rt": 4394.5,
+      "timestamp": "2025-11-12T21:03:52.872Z"
+    },
+    {
+      "trial": 16,
+      "image": "image-01.webp",
+      "response": "exterieur",
+      "rt": 1064.5,
+      "timestamp": "2025-11-12T21:03:53.938Z"
+    },
+    {
+      "trial": 17,
+      "image": "image-11.webp",
+      "response": "interieur",
+      "rt": 872.1000000238419,
+      "timestamp": "2025-11-12T21:03:54.810Z"
+    },
+    {
+      "trial": 18,
+      "image": "image-15.webp",
+      "response": "interieur",
+      "rt": 1621.8999999761581,
+      "timestamp": "2025-11-12T21:03:56.433Z"
+    },
+    {
+      "trial": 19,
+      "image": "image-26.webp",
+      "response": "exterieur",
+      "rt": 1168.8999999761581,
+      "timestamp": "2025-11-12T21:03:57.603Z"
+    },
+    {
+      "trial": 20,
+      "image": "image-40.webp",
+      "response": "exterieur",
+      "rt": 4224.900000095367,
+      "timestamp": "2025-11-12T21:04:01.829Z"
+    },
+    {
+      "trial": 21,
+      "image": "image-39.webp",
+      "response": "exterieur",
+      "rt": 1154.5,
+      "timestamp": "2025-11-12T21:04:02.985Z"
+    }
+  ]
+}
