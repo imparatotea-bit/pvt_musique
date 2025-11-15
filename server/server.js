@@ -341,7 +341,7 @@ app.get('/api/stats', (req, res) => {
   }
 });
 
-// GET /api/export
+// GET /api/export - Export simple (agrégé)
 app.get('/api/export', (req, res) => {
   try {
     const result = db.exec('SELECT * FROM participants ORDER BY completed_at DESC');
@@ -360,6 +360,190 @@ app.get('/api/export', (req, res) => {
 
   } catch (error) {
     console.error('❌ Erreur export:', error);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
+// GET /api/export-detailed - Export détaillé avec tous les trials
+app.get('/api/export-detailed', (req, res) => {
+  try {
+    const dataDir = path.join(__dirname, 'data');
+
+    if (!fs.existsSync(dataDir)) {
+      return res.status(404).json({ error: 'Aucune donnée disponible' });
+    }
+
+    const files = fs.readdirSync(dataDir).filter(f => f.endsWith('.json'));
+
+    if (files.length === 0) {
+      return res.status(404).json({ error: 'Aucun participant trouvé' });
+    }
+
+    // Fonction pour calculer des statistiques
+    const calculateStats = (arr) => {
+      if (!arr || arr.length === 0) return { mean: null, median: null, min: null, max: null, sd: null };
+
+      const values = arr.map(t => t.rt).sort((a, b) => a - b);
+      const mean = values.reduce((a, b) => a + b, 0) / values.length;
+      const median = values.length % 2 === 0
+        ? (values[values.length / 2 - 1] + values[values.length / 2]) / 2
+        : values[Math.floor(values.length / 2)];
+      const min = Math.min(...values);
+      const max = Math.max(...values);
+      const variance = values.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / values.length;
+      const sd = Math.sqrt(variance);
+
+      return { mean, median, min, max, sd };
+    };
+
+    // Construction des en-têtes
+    const headers = [
+      // Infos démographiques
+      'Participant_ID',
+      'Age',
+      'Genre',
+      'Habitude_Musique',
+      'Fatigue',
+      'Stress',
+      'Habitue',
+      'Condition',
+      'Ordre',
+
+      // PVT Sans Musique - Trials individuels
+      ...Array.from({length: 10}, (_, i) => `PVT_Sans_Musique_RT${i+1}`),
+
+      // PVT Sans Musique - Statistiques
+      'PVT_Sans_Musique_Moyenne',
+      'PVT_Sans_Musique_Mediane',
+      'PVT_Sans_Musique_Min',
+      'PVT_Sans_Musique_Max',
+      'PVT_Sans_Musique_Ecart_Type',
+
+      // PVT Avec Musique - Trials individuels
+      ...Array.from({length: 10}, (_, i) => `PVT_Avec_Musique_RT${i+1}`),
+
+      // PVT Avec Musique - Statistiques
+      'PVT_Avec_Musique_Moyenne',
+      'PVT_Avec_Musique_Mediane',
+      'PVT_Avec_Musique_Min',
+      'PVT_Avec_Musique_Max',
+      'PVT_Avec_Musique_Ecart_Type',
+
+      // Catégorisation - Stats générales
+      'Categorisation_Bloc1_Temps_Moyen',
+      'Categorisation_Bloc1_Nombre_Essais',
+      'Categorisation_Bloc2_Temps_Moyen',
+      'Categorisation_Bloc2_Nombre_Essais',
+
+      // Métadonnées
+      'Date_Completion',
+      'Timestamp_Completion'
+    ];
+
+    const rows = [];
+
+    // Traiter chaque participant
+    for (const file of files) {
+      try {
+        const filepath = path.join(dataDir, file);
+        const data = JSON.parse(fs.readFileSync(filepath, 'utf8'));
+
+        const quest = data.questionnaire || {};
+        const pvt1 = data.pvtBlock1 || [];
+        const pvt2 = data.pvtBlock2 || [];
+        const cat1 = data.categorization1 || [];
+        const cat2 = data.categorization2 || [];
+
+        // Déterminer quel bloc est avec/sans musique selon la condition
+        const isMusicFirst = data.condition === 'C2'; // C2 = musique d'abord
+        const pvtWithMusic = isMusicFirst ? pvt1 : pvt2;
+        const pvtWithoutMusic = isMusicFirst ? pvt2 : pvt1;
+
+        // Stats PVT sans musique
+        const statsWithoutMusic = calculateStats(pvtWithoutMusic);
+
+        // Stats PVT avec musique
+        const statsWithMusic = calculateStats(pvtWithMusic);
+
+        // Stats catégorisation
+        const catStats1 = cat1.length > 0
+          ? cat1.reduce((sum, t) => sum + t.rt, 0) / cat1.length
+          : null;
+        const catStats2 = cat2.length > 0
+          ? cat2.reduce((sum, t) => sum + t.rt, 0) / cat2.length
+          : null;
+
+        // Construire la ligne
+        const row = [
+          // Infos démographiques
+          data.participantId,
+          quest.age || '',
+          quest.gender || '',
+          quest.musicHabit || '',
+          quest.fatigue || '',
+          quest.stress || '',
+          quest.isHabitue ? 'Oui' : 'Non',
+          data.condition || '',
+          isMusicFirst ? 'Musique_puis_Silence' : 'Silence_puis_Musique',
+
+          // PVT Sans Musique - Trials individuels (10 colonnes)
+          ...Array.from({length: 10}, (_, i) =>
+            pvtWithoutMusic[i]?.rt ? Math.round(pvtWithoutMusic[i].rt * 100) / 100 : ''
+          ),
+
+          // PVT Sans Musique - Statistiques
+          statsWithoutMusic.mean ? Math.round(statsWithoutMusic.mean * 100) / 100 : '',
+          statsWithoutMusic.median ? Math.round(statsWithoutMusic.median * 100) / 100 : '',
+          statsWithoutMusic.min ? Math.round(statsWithoutMusic.min * 100) / 100 : '',
+          statsWithoutMusic.max ? Math.round(statsWithoutMusic.max * 100) / 100 : '',
+          statsWithoutMusic.sd ? Math.round(statsWithoutMusic.sd * 100) / 100 : '',
+
+          // PVT Avec Musique - Trials individuels (10 colonnes)
+          ...Array.from({length: 10}, (_, i) =>
+            pvtWithMusic[i]?.rt ? Math.round(pvtWithMusic[i].rt * 100) / 100 : ''
+          ),
+
+          // PVT Avec Musique - Statistiques
+          statsWithMusic.mean ? Math.round(statsWithMusic.mean * 100) / 100 : '',
+          statsWithMusic.median ? Math.round(statsWithMusic.median * 100) / 100 : '',
+          statsWithMusic.min ? Math.round(statsWithMusic.min * 100) / 100 : '',
+          statsWithMusic.max ? Math.round(statsWithMusic.max * 100) / 100 : '',
+          statsWithMusic.sd ? Math.round(statsWithMusic.sd * 100) / 100 : '',
+
+          // Catégorisation - Stats
+          catStats1 ? Math.round(catStats1 * 100) / 100 : '',
+          cat1.length || '',
+          catStats2 ? Math.round(catStats2 * 100) / 100 : '',
+          cat2.length || '',
+
+          // Métadonnées
+          data.timestamp ? new Date(data.timestamp).toLocaleString('fr-FR') : '',
+          data.timestamp || ''
+        ];
+
+        rows.push(row.map(v => {
+          // Échapper les virgules et guillemets pour CSV
+          const str = String(v);
+          if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+            return `"${str.replace(/"/g, '""')}"`;
+          }
+          return str;
+        }).join(','));
+
+      } catch (error) {
+        console.error(`❌ Erreur traitement ${file}:`, error.message);
+      }
+    }
+
+    // Générer le CSV
+    const csv = [headers.join(','), ...rows].join('\n');
+
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', 'attachment; filename=participants_detailed.csv');
+    res.send('\uFEFF' + csv); // BOM UTF-8 pour Excel
+
+  } catch (error) {
+    console.error('❌ Erreur export détaillé:', error);
     res.status(500).json({ error: 'Erreur serveur' });
   }
 });
@@ -764,7 +948,8 @@ app.get('/', (req, res) => {
 
     <!-- Actions -->
     <div class="flex flex-wrap gap-3 mb-6">
-      <a href="/api/export" class="px-6 py-3 rounded-xl bg-apple-gray-900 text-white font-medium hover:bg-apple-gray-700 transition-colors duration-200 inline-block">Exporter CSV</a>
+      <a href="/api/export-detailed" class="px-6 py-3 rounded-xl bg-apple-gray-900 text-white font-medium hover:bg-apple-gray-700 transition-colors duration-200 inline-block">📊 Export Détaillé (Excel)</a>
+      <a href="/api/export" class="px-6 py-3 rounded-xl bg-apple-gray-700 text-white font-medium hover:bg-apple-gray-600 transition-colors duration-200 inline-block">Export Simple CSV</a>
       <a href="/api/stats" class="px-6 py-3 rounded-xl bg-apple-gray-100 text-apple-gray-900 border border-apple-gray-200 font-medium hover:bg-apple-gray-200 transition-colors duration-200 inline-block">Statistiques JSON</a>
       <button onclick="location.reload()" class="px-6 py-3 rounded-xl bg-apple-gray-100 text-apple-gray-900 border border-apple-gray-200 font-medium hover:bg-apple-gray-200 transition-colors duration-200">Actualiser</button>
       <button onclick="showDeleteModal()" class="px-6 py-3 rounded-xl bg-red-500 text-white font-medium hover:bg-red-600 transition-colors duration-200">Nettoyer la BDD</button>
