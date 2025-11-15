@@ -71,13 +71,90 @@ app.use('/static', express.static(path.join(__dirname, '..', 'static')));
 let db = null;
 const DB_PATH = path.join(__dirname, 'participants.db');
 
+// Restaurer la BDD depuis les fichiers JSON (fallback si BDD perdue)
+async function restoreFromJSON(SQL, db) {
+  const dataDir = path.join(__dirname, 'data');
+
+  if (!fs.existsSync(dataDir)) {
+    return 0;
+  }
+
+  const files = fs.readdirSync(dataDir).filter(f => f.endsWith('.json'));
+  if (files.length === 0) {
+    return 0;
+  }
+
+  console.log(`📦 Restauration de ${files.length} participants depuis les fichiers JSON...`);
+  let restored = 0;
+
+  for (const file of files) {
+    try {
+      const filepath = path.join(dataDir, file);
+      const data = JSON.parse(fs.readFileSync(filepath, 'utf8'));
+
+      // Calculer les stats
+      const pvt1 = data.pvtBlock1 || [];
+      const pvt2 = data.pvtBlock2 || [];
+
+      const calculateMean = (arr) => {
+        if (!arr.length) return null;
+        const sum = arr.reduce((acc, trial) => acc + trial.rt, 0);
+        return sum / arr.length;
+      };
+
+      const isMusicFirst = data.condition === 'C2';
+      const rtWithMusic = isMusicFirst ? calculateMean(pvt1) : calculateMean(pvt2);
+      const rtWithoutMusic = isMusicFirst ? calculateMean(pvt2) : calculateMean(pvt1);
+
+      const quest = data.questionnaire || {};
+      const completedAt = data.timestamp || new Date().toISOString();
+
+      // Vérifier si déjà présent
+      const existing = db.exec(`SELECT COUNT(*) FROM participants WHERE participant_id = ?`, [data.participantId]);
+      if (existing[0]?.values[0]?.[0] > 0) {
+        continue; // Déjà restauré
+      }
+
+      // Insérer
+      db.run(`
+        INSERT OR REPLACE INTO participants
+        (participant_id, age, gender, music_habit, fatigue, stress, is_habitue, condition, rt_with_music, rt_without_music, completed_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `, [
+        data.participantId,
+        quest.age || null,
+        quest.gender || null,
+        quest.musicHabit || null,
+        quest.fatigue || null,
+        quest.stress || null,
+        quest.isHabitue ? 1 : 0,
+        data.condition,
+        rtWithMusic,
+        rtWithoutMusic,
+        completedAt
+      ]);
+
+      restored++;
+    } catch (error) {
+      console.error(`⚠️  Erreur restauration ${file}:`, error.message);
+    }
+  }
+
+  return restored;
+}
+
 // Initialiser SQL.js et la base de données
 async function initDatabase() {
   const SQL = await initSqlJs();
 
   let buffer = null;
-  if (fs.existsSync(DB_PATH)) {
+  const dbExists = fs.existsSync(DB_PATH);
+
+  if (dbExists) {
     buffer = fs.readFileSync(DB_PATH);
+    console.log('📂 Base de données existante chargée');
+  } else {
+    console.log('⚠️  Aucune base de données trouvée - nouvelle BDD créée');
   }
 
   db = new SQL.Database(buffer);
@@ -100,8 +177,22 @@ async function initDatabase() {
     );
   `);
 
+  // Si la BDD n'existait pas OU est vide, restaurer depuis les JSON
+  const countResult = db.exec('SELECT COUNT(*) FROM participants');
+  const currentCount = countResult[0]?.values[0]?.[0] || 0;
+
+  if (!dbExists || currentCount === 0) {
+    const restored = await restoreFromJSON(SQL, db);
+    if (restored > 0) {
+      console.log(`✅ ${restored} participants restaurés depuis les fichiers JSON`);
+    }
+  }
+
   saveDatabase();
-  console.log('✅ Base de données initialisée');
+
+  // Afficher les stats finales
+  const finalCount = db.exec('SELECT COUNT(*) FROM participants')[0]?.values[0]?.[0] || 0;
+  console.log(`✅ Base de données initialisée (${finalCount} participants)`);
 }
 
 // Sauvegarder la base de données
